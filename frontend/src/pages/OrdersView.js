@@ -17,6 +17,7 @@
 import React, { useState, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import Navbar from '../components/Navbar';
+import TopControls from '../components/TopControls';
 import { getSummary, getOrders, getCities } from '../utils/api';
 
 export default function OrdersView() {
@@ -50,8 +51,9 @@ export default function OrdersView() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg-primary)' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--bg-primary)', marginLeft: 'var(--sidebar-width)', transition: 'margin-left 0.22s ease' }}>
       <Navbar />
+      <TopControls />
       <div className="page">
 
         {/* ── Filter bar ─────────────────────────────────────────────────── */}
