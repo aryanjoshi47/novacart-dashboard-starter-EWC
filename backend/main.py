@@ -232,7 +232,7 @@ def get_orders(start: str = "2022-01-01", end: str = "2022-12-31"):
     """
     _SQL = """
         SELECT
-            dd.year || '-' || printf('%02d', dd.month)  AS month,
+            dd.year || '-' || LPAD(dd.month::STRING, 2, '0')  AS month,
             dd.month_name,
             COUNT(fo.order_id)          AS order_count,
             ROUND(SUM(fo.amount), 2)    AS revenue

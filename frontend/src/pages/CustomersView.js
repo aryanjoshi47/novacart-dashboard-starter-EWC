@@ -12,6 +12,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Navbar from '../components/Navbar';
+import TopControls from '../components/TopControls';
 import { getCustomers } from '../utils/api';
 
 function formatCurrency(value) {
@@ -35,7 +36,7 @@ export default function CustomersView() {
     setError(null);
     try {
       const data = await getCustomers(startDate, endDate);
-      setCustomers(data);
+      setCustomers(Array.isArray(data) ? data : (data.data ?? []));
     } catch (err) {
       setError(err.message);
     } finally {
@@ -66,8 +67,9 @@ export default function CustomersView() {
   const sortIcon = (col) => sortBy === col ? (sortDir === 'asc' ? ' ↑' : ' ↓') : '';
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg-primary)' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--bg-primary)', marginLeft: 'var(--sidebar-width)', transition: 'margin-left 0.22s ease' }}>
       <Navbar />
+      <TopControls />
       <div className="page">
 
         <div className="filter-bar">

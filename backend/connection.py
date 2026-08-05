@@ -116,12 +116,13 @@ def execute_query(conn, query: str, params: tuple = ()) -> list[dict]:
     Args:
         conn: database connection (SQLite or Snowflake)
         query: SQL query string
-        params: query parameters (use ? for SQLite, %s for Snowflake)
+        params: query parameters (always use ? — translated to %s for Snowflake automatically)
 
     Returns:
         list of dicts, one per row
     """
     if DATA_BACKEND == "snowflake":
+        query = query.replace("?", "%s")
         cursor = conn.cursor(snowflake.connector.DictCursor)
         cursor.execute(query, params)
         rows = cursor.fetchall()
