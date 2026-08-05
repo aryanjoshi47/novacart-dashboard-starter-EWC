@@ -4,13 +4,14 @@ main.py — NovaCart Account Dashboard API
 Built with FastAPI. Auto-generated docs at: http://localhost:8000/docs
 
 Endpoints:
-  GET /health                                  — service health check
-  GET /authorize                               — SPCS OAuth flow
-  GET /franchise/{id}/summary                  — overview stats
-  GET /franchise/{id}/orders                   — monthly order volume and revenue
-  GET /franchise/{id}/products                 — top products by revenue
-  GET /franchise/{id}/customers                — top customers by revenue
-  GET /franchise/{id}/countries                — revenue by country (city/state for US data)
+  GET /health               — service health check
+  GET /authorize            — SPCS OAuth flow
+  GET /franchises           — list of valid franchise IDs
+  GET /franchise/summary    — overview stats
+  GET /franchise/orders     — monthly order volume and revenue
+  GET /franchise/products   — top products by revenue
+  GET /franchise/customers  — top customers by revenue
+  GET /franchise/cities     — revenue by city/state
 
 Data schema (from the DE capstone Gold layer):
   fact_orders:   order_id, customer_id, product_id, order_date, amount, currency, status, quantity, date_key
@@ -134,6 +135,26 @@ def _validate_date(value: str, param_name: str) -> None:
         )
 
 
+def _validate_pagination(limit: int, offset: int, sort_order: str) -> None:
+    """
+    Raises HTTP 400 if pagination params are out of range.
+      limit:      1–100
+      offset:     >= 0
+      sort_order: 'asc' or 'desc'
+    """
+    if not (1 <= limit <= 100):
+        raise HTTPException(status_code=400, detail="'limit' must be between 1 and 100.")
+    if offset < 0:
+        raise HTTPException(status_code=400, detail="'offset' must be 0 or greater.")
+    if sort_order not in ("asc", "desc"):
+        raise HTTPException(status_code=400, detail="'sort_order' must be 'asc' or 'desc'.")
+
+
+# Allowlist — maps user-supplied sort_order string to a safe SQL keyword.
+# Never interpolate user input directly into SQL.
+_SORT_DIR = {"asc": "ASC", "desc": "DESC"}
+
+
 def _require_auth(request: Request) -> None:
     """
     FastAPI dependency — enforces authorization on franchise endpoints.
@@ -148,27 +169,21 @@ def _require_auth(request: Request) -> None:
         raise HTTPException(status_code=401, detail="Unauthorized")
 
 
-# ── Franchise endpoints ───────────────────────────────────────────────────────
-
-@app.get("/franchise/{franchise_id}/summary", tags=["Franchise"],
+@app.get("/franchise/summary", tags=["Franchise"],
          dependencies=[Depends(_require_auth)])
-def get_summary(franchise_id: int):
+def get_summary():
     """
     Returns an overview of all orders in the database:
     - Total revenue (delivered + shipped orders only)
     - Total orders
-    - Number of unique customers
+    - Number of active customers
     - Date range of available data
-
-    Path parameter:
-      franchise_id: unique ID of the franchise (integer)
 
     Response:
     {
-        "franchise_id": 1,
         "total_revenue": 1284750.00,
         "total_orders": 8432,
-        "unique_customers": 380,
+        "active_customers": 380,
         "date_range": { "start": "2022-01-01", "end": "2022-12-31" }
     }
     """
@@ -188,7 +203,6 @@ def get_summary(franchise_id: int):
 
     row = results[0] if results else {}
     return {
-        "franchise_id":      franchise_id,
         "total_revenue":     round(row.get("total_revenue") or 0, 2),
         "total_orders":      row.get("total_orders") or 0,
         "active_customers":  row.get("active_customers") or 0,
@@ -199,15 +213,12 @@ def get_summary(franchise_id: int):
     }
 
 
-@app.get("/franchise/{franchise_id}/orders", tags=["Franchise"],
+@app.get("/franchise/orders", tags=["Franchise"],
          dependencies=[Depends(_require_auth)])
-def get_orders(franchise_id: int, start: str = "2022-01-01", end: str = "2022-12-31"):
+def get_orders(start: str = "2022-01-01", end: str = "2022-12-31"):
     """
     Returns monthly order volume and revenue for the given date range.
     Used to power the orders overview chart.
-
-    Path parameter:
-      franchise_id: unique ID of the franchise (integer)
 
     Query parameters:
       start: start date (YYYY-MM-DD)
@@ -240,26 +251,37 @@ def get_orders(franchise_id: int, start: str = "2022-01-01", end: str = "2022-12
     return results
 
 
-@app.get("/franchise/{franchise_id}/products", tags=["Franchise"],
+@app.get("/franchise/products", tags=["Franchise"],
          dependencies=[Depends(_require_auth)])
-def get_products(franchise_id: int, start: str = "2022-01-01", end: str = "2022-12-31"):
+def get_products(
+    start:      str = "2022-01-01",
+    end:        str = "2022-12-31",
+    limit:      int = 10,
+    offset:     int = 0,
+    sort_order: str = "desc",
+):
     """
-    Returns the top 10 products by revenue for the given date range.
-
-    Path parameter:
-      franchise_id: unique ID of the franchise (integer)
+    Returns products by revenue for the given date range.
 
     Query parameters:
-      start: start date (YYYY-MM-DD)
-      end:   end date (YYYY-MM-DD)
+      start:      start date (YYYY-MM-DD)
+      end:        end date (YYYY-MM-DD)
+      limit:      number of results to return (1–100, default 10)
+      offset:     number of results to skip for pagination (default 0)
+      sort_order: 'desc' (highest revenue first) or 'asc' (lowest first)
 
     Response:
-    [
-        { "product_id": "P001", "product_name": "Wireless Headphones", "category": "Electronics",
-          "units_sold": 342, "revenue": 30578.58 }
-    ]
+    {
+        "data": [ { "product_id": "P001", "product_name": "...", "category": "...",
+                    "units_sold": 342, "revenue": 30578.58 } ],
+        "pagination": { "limit": 10, "offset": 0, "sort_order": "desc" }
+    }
     """
-    _SQL = """
+    _validate_date(start, "start")
+    _validate_date(end, "end")
+    _validate_pagination(limit, offset, sort_order)
+
+    _SQL = f"""
         SELECT
             dp.product_id,
             dp.name                     AS product_name,
@@ -271,37 +293,50 @@ def get_products(franchise_id: int, start: str = "2022-01-01", end: str = "2022-
         WHERE fo.status IN ('delivered', 'shipped')
           AND fo.order_date BETWEEN ? AND ?
         GROUP BY dp.product_id, dp.name, dp.category
-        ORDER BY revenue DESC
-        LIMIT 10
+        ORDER BY revenue {_SORT_DIR[sort_order]}
+        LIMIT ? OFFSET ?
     """
 
-    _validate_date(start, "start")
-    _validate_date(end, "end")
     conn    = get_connection()
-    results = execute_query(conn, _SQL, params=(start, end))
-    return results
+    results = execute_query(conn, _SQL, params=(start, end, limit, offset))
+    return {
+        "data":       results,
+        "pagination": {"limit": limit, "offset": offset, "sort_order": sort_order},
+    }
 
 
-@app.get("/franchise/{franchise_id}/customers", tags=["Franchise"],
+@app.get("/franchise/customers", tags=["Franchise"],
          dependencies=[Depends(_require_auth)])
-def get_customers(franchise_id: int, start: str = "2022-01-01", end: str = "2022-12-31"):
+def get_customers(
+    start:      str = "2022-01-01",
+    end:        str = "2022-12-31",
+    limit:      int = 20,
+    offset:     int = 0,
+    sort_order: str = "desc",
+):
     """
-    Returns the top 20 customers by total spend for the given date range.
-
-    Path parameter:
-      franchise_id: unique ID of the franchise (integer)
+    Returns customers by total spend for the given date range.
 
     Query parameters:
-      start: start date (YYYY-MM-DD)
-      end:   end date (YYYY-MM-DD)
+      start:      start date (YYYY-MM-DD)
+      end:        end date (YYYY-MM-DD)
+      limit:      number of results to return (1–100, default 20)
+      offset:     number of results to skip for pagination (default 0)
+      sort_order: 'desc' (highest spend first) or 'asc' (lowest first)
 
     Response:
-    [
-        { "customer_id": "C001", "name": "Alice Johnson", "city": "Austin",
-          "state": "TX", "total_orders": 14, "total_spent": 1240.50 }
-    ]
+    {
+        "data": [ { "customer_id": "C001", "name": "Alice Johnson",
+                    "city": "Austin", "state": "TX",
+                    "total_orders": 14, "total_spent": 1240.50 } ],
+        "pagination": { "limit": 20, "offset": 0, "sort_order": "desc" }
+    }
     """
-    _SQL = """
+    _validate_date(start, "start")
+    _validate_date(end, "end")
+    _validate_pagination(limit, offset, sort_order)
+
+    _SQL = f"""
         SELECT
             dc.customer_id,
             dc.name,
@@ -315,37 +350,49 @@ def get_customers(franchise_id: int, start: str = "2022-01-01", end: str = "2022
           AND fo.order_date BETWEEN ? AND ?
           AND dc.is_current = 1
         GROUP BY dc.customer_id, dc.name, dc.addr_city, dc.addr_state
-        ORDER BY total_spent DESC
-        LIMIT 20
+        ORDER BY total_spent {_SORT_DIR[sort_order]}
+        LIMIT ? OFFSET ?
     """
 
-    _validate_date(start, "start")
-    _validate_date(end, "end")
     conn    = get_connection()
-    results = execute_query(conn, _SQL, params=(start, end))
-    return results
+    results = execute_query(conn, _SQL, params=(start, end, limit, offset))
+    return {
+        "data":       results,
+        "pagination": {"limit": limit, "offset": offset, "sort_order": sort_order},
+    }
 
 
-@app.get("/franchise/{franchise_id}/countries", tags=["Franchise"],
+@app.get("/franchise/cities", tags=["Franchise"],
          dependencies=[Depends(_require_auth)])
-def get_countries(franchise_id: int, start: str = "2022-01-01", end: str = "2022-12-31"):
+def get_cities(
+    start:      str = "2022-01-01",
+    end:        str = "2022-12-31",
+    limit:      int = 50,
+    offset:     int = 0,
+    sort_order: str = "desc",
+):
     """
-    Returns revenue and order count grouped by city and state.
-    Used to power the geographic breakdown chart.
-
-    Path parameter:
-      franchise_id: unique ID of the franchise (integer)
+    Returns revenue grouped by city and state for the given date range.
 
     Query parameters:
-      start: start date (YYYY-MM-DD)
-      end:   end date (YYYY-MM-DD)
+      start:      start date (YYYY-MM-DD)
+      end:        end date (YYYY-MM-DD)
+      limit:      number of results to return (1–100, default 50)
+      offset:     number of results to skip for pagination (default 0)
+      sort_order: 'desc' (highest revenue first) or 'asc' (lowest first)
 
     Response:
-    [
-        { "city": "Austin", "state": "TX", "total_orders": 420, "total_revenue": 38430.00 }
-    ]
+    {
+        "data": [ { "city": "Austin", "state": "TX",
+                    "total_orders": 420, "total_revenue": 38430.00 } ],
+        "pagination": { "limit": 50, "offset": 0, "sort_order": "desc" }
+    }
     """
-    _SQL = """
+    _validate_date(start, "start")
+    _validate_date(end, "end")
+    _validate_pagination(limit, offset, sort_order)
+
+    _SQL = f"""
         SELECT
             dc.addr_city                AS city,
             dc.addr_state               AS state,
@@ -357,12 +404,13 @@ def get_countries(franchise_id: int, start: str = "2022-01-01", end: str = "2022
           AND fo.order_date BETWEEN ? AND ?
           AND dc.is_current = 1
         GROUP BY dc.addr_city, dc.addr_state
-        ORDER BY total_revenue DESC
-        LIMIT 100
+        ORDER BY total_revenue {_SORT_DIR[sort_order]}
+        LIMIT ? OFFSET ?
     """
 
-    _validate_date(start, "start")
-    _validate_date(end, "end")
     conn    = get_connection()
-    results = execute_query(conn, _SQL, params=(start, end))
-    return results
+    results = execute_query(conn, _SQL, params=(start, end, limit, offset))
+    return {
+        "data":       results,
+        "pagination": {"limit": limit, "offset": offset, "sort_order": sort_order},
+    }
