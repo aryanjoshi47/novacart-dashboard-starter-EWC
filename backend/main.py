@@ -357,7 +357,7 @@ def get_countries(franchise_id: int, start: str = "2022-01-01", end: str = "2022
           AND fo.order_date BETWEEN ? AND ?
           AND dc.is_current = 1
         GROUP BY dc.addr_city, dc.addr_state
-        ORDER BY revenue DESC
+        ORDER BY total_revenue DESC
         LIMIT 100
     """
 
