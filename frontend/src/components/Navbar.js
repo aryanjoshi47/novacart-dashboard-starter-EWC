@@ -2,60 +2,124 @@ import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useTheme } from '../utils/ThemeContext';
 import ServiceStatus from './ServiceStatus';
+import { Star, BarChart2, Package, Users, Sun, Moon } from 'lucide-react';
+
+const links = [
+  { label: 'Orders',    path: '/orders',    Icon: BarChart2 },
+  { label: 'Products',  path: '/products',  Icon: Package   },
+  { label: 'Customers', path: '/customers', Icon: Users     },
+];
+
 
 export default function Navbar() {
   const navigate = useNavigate();
   const location = useLocation();
   const { dark, toggle } = useTheme();
 
-  const links = [
-    { label: '📊 Orders',    path: '/orders'    },
-    { label: '📦 Products',  path: '/products'  },
-    { label: '👤 Customers', path: '/customers' },
-  ];
+  const navBg = dark ? '#1A2332' : '#ffffff';
+  const borderColor = dark ? '#1E3248' : '#E0E6ED';
+  const logoColor = dark ? '#E8EDF2' : '#1A2332';
+  const inactiveColor = dark ? '#607D8B' : '#6B7280';
+  const hoverColor = dark ? '#E8EDF2' : '#1A2332';
 
   return (
     <nav style={{
-      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-      padding: '0 24px', height: 56,
-      background: dark ? '#0D1B2A' : '#0D2B4E',
-      boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
-      position: 'sticky', top: 0, zIndex: 100,
-    }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}
-           onClick={() => navigate('/')}>
-        <span style={{ fontSize: 20 }}>🛒</span>
-        <span style={{ color: '#fff', fontWeight: 700, fontSize: 18 }}>NovaCart</span>
-        <span style={{ color: '#4DB6AC', fontSize: 12, marginLeft: 4 }}>Dashboard</span>
-      </div>
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: '0 28px',
+        height: 64,
+        background: navBg,
+        borderBottom: `1px solid ${borderColor}`,
+        boxShadow: dark ? '0 2px 12px rgba(0,0,0,0.3)' : '0 2px 8px rgba(0,0,0,0.07)',
+        position: 'sticky',
+        top: 0,
+        zIndex: 100,
+      }}>
 
-      <div style={{ display: 'flex', gap: 8 }}>
-        {links.map(({ label, path }) => {
-          const active = location.pathname === path;
-          return (
-            <button key={path} onClick={() => navigate(path)}
-              style={{
-                background: active ? 'rgba(77,182,172,0.2)' : 'transparent',
-                border: active ? '1px solid #4DB6AC' : '1px solid transparent',
-                color: active ? '#4DB6AC' : '#B0BEC5',
-                borderRadius: 6, padding: '4px 14px', cursor: 'pointer', fontSize: 13, fontWeight: 500,
-              }}>
-              {label}
-            </button>
-          );
-        })}
-      </div>
-
-      <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-        <ServiceStatus />
-        <button onClick={toggle} title={dark ? 'Light mode' : 'Dark mode'}
+        {/* Logo */}
+        <div
+          onClick={() => navigate('/')}
           style={{
-            background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)',
-            color: '#fff', borderRadius: 6, padding: '4px 10px', cursor: 'pointer', fontSize: 16,
+            display: 'flex', alignItems: 'center', gap: 10,
+            cursor: 'pointer', userSelect: 'none',
+          }}
+        >
+          <Star size={22} color="#7C3AED" fill="#7C3AED" strokeWidth={1.5} />
+          <span style={{ color: logoColor, fontWeight: 500, fontSize: 18, letterSpacing: '-0.3px' }}>
+            NovaCart
+          </span>
+          <span style={{
+            color: '#7C3AED',
+            fontSize: 11,
+            fontWeight: 500,
+            letterSpacing: '0.6px',
+            textTransform: 'uppercase',
+            background: 'rgba(124,58,237,0.10)',
+            border: '1px solid rgba(124,58,237,0.25)',
+            borderRadius: 4,
+            padding: '1px 6px',
+            marginLeft: 2,
           }}>
-          {dark ? '☀️' : '🌙'}
-        </button>
-      </div>
+            Dashboard
+          </span>
+        </div>
+
+        {/* Nav links */}
+        <div style={{ display: 'flex', gap: 4 }}>
+          {links.map(({ label, path, Icon }) => {
+            const active = location.pathname === path;
+            return (
+              <button
+                key={path}
+                onClick={() => navigate(path)}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 7,
+                  background: active ? '#7C3AED' : 'transparent',
+                  border: 'none',
+                  color: active ? '#fff' : inactiveColor,
+                  borderRadius: 10,
+                  padding: '7px 16px',
+                  cursor: 'pointer',
+                  fontSize: 15,
+                  fontWeight: 500,
+                  transition: 'background 0.15s, color 0.15s',
+                  height: 40,
+                  boxSizing: 'border-box',
+                }}
+                onMouseEnter={e => { if (!active) { e.currentTarget.style.color = hoverColor; e.currentTarget.style.background = 'rgba(124,58,237,0.10)'; } }}
+                onMouseLeave={e => { if (!active) { e.currentTarget.style.color = inactiveColor; e.currentTarget.style.background = 'transparent'; } }}
+              >
+                <Icon size={15} strokeWidth={1.8} />
+                {label}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Right side: service status + theme toggle */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <ServiceStatus />
+          <button
+            onClick={toggle}
+            title={dark ? 'Switch to light mode' : 'Switch to dark mode'}
+            style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              width: 36, height: 36,
+              background: dark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)',
+              border: `1px solid ${borderColor}`,
+              borderRadius: '50%',
+              color: dark ? '#FFD54F' : '#6B7280',
+              cursor: 'pointer',
+              transition: 'background 0.15s, color 0.15s',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = dark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.09)'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = dark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)'; }}
+          >
+            {dark ? <Sun size={17} strokeWidth={2} /> : <Moon size={17} strokeWidth={2} />}
+          </button>
+        </div>
+
     </nav>
   );
 }
