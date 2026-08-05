@@ -37,6 +37,38 @@ export default function Navbar() {
   }
 
   return (
+    <>
+    {/* Collapse toggle — floats on the outer edge, vertically centred */}
+    <button
+      onClick={toggle}
+      title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+      style={{
+        position: 'fixed',
+        top: '50vh',
+        left: width - 20,
+        transform: 'translateY(-50%)',
+        zIndex: 101,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        width: 40,
+        height: 40,
+        background: navBg,
+        border: `1px solid ${borderColor}`,
+        borderRadius: '50%',
+        color: inactiveColor,
+        cursor: 'pointer',
+        transition: 'left 0.22s ease, background 0.15s, color 0.15s',
+        boxShadow: dark ? '0 2px 8px rgba(0,0,0,0.4)' : '0 2px 8px rgba(0,0,0,0.12)',
+        padding: 0,
+        flexShrink: 0,
+      }}
+      onMouseEnter={e => { e.currentTarget.style.background = dark ? '#1A1A2E' : '#F3F4F6'; e.currentTarget.style.color = hoverColor; }}
+      onMouseLeave={e => { e.currentTarget.style.background = navBg; e.currentTarget.style.color = inactiveColor; }}
+    >
+      {collapsed ? <ChevronRight size={18} strokeWidth={2.5} /> : <ChevronLeft size={18} strokeWidth={2.5} />}
+    </button>
+
     <nav style={{
       position: 'fixed',
       left: 0,
@@ -80,37 +112,6 @@ export default function Navbar() {
             NovaCart
           </span>
         )}
-      </div>
-
-      {/* Collapse toggle button */}
-      <div style={{
-        display: 'flex',
-        justifyContent: 'center',
-        padding: '0 0 12px',
-        flexShrink: 0,
-      }}>
-        <button
-          onClick={toggle}
-          title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            width: 34,
-            height: 34,
-            background: 'transparent',
-            border: `1px solid ${iconBorderColor}`,
-            borderRadius: 8,
-            color: inactiveColor,
-            cursor: 'pointer',
-            transition: 'background 0.15s, color 0.15s',
-            flexShrink: 0,
-          }}
-          onMouseEnter={e => { e.currentTarget.style.background = dark ? 'rgba(167,139,250,0.12)' : 'rgba(124,58,237,0.07)'; e.currentTarget.style.color = hoverColor; }}
-          onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = inactiveColor; }}
-        >
-          {collapsed ? <ChevronRight size={15} strokeWidth={2} /> : <ChevronLeft size={15} strokeWidth={2} />}
-        </button>
       </div>
 
       {/* Nav links */}
@@ -168,5 +169,6 @@ export default function Navbar() {
       </div>
 
     </nav>
+    </>
   );
 }
