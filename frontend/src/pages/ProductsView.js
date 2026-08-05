@@ -38,7 +38,7 @@ export default function ProductsView() {
     setError(null);
     try {
       const data = await getProducts(startDate, endDate);
-      setProducts(data);
+      setProducts(Array.isArray(data) ? data : (data.data ?? []));
     } catch (err) {
       setError(err.message);
     } finally {

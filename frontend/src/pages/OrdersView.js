@@ -42,7 +42,7 @@ export default function OrdersView() {
       ]);
       setSummary(s);
       setOrders(o);
-      setCities(c);
+      setCities(Array.isArray(c) ? c : (c.data ?? []));
     } catch (err) {
       setError(err.message);
     } finally {

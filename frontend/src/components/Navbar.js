@@ -16,7 +16,7 @@ export default function Navbar() {
   const navigate = useNavigate();
   const location = useLocation();
   const { dark } = useTheme();
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(() => localStorage.getItem('sidebarCollapsed') === 'true');
 
   const navBg           = dark ? '#0D0D10' : '#ffffff';
   const borderColor     = dark ? '#1A1A24' : '#E0E6ED';
@@ -33,7 +33,11 @@ export default function Navbar() {
   }, [width]);
 
   function toggle() {
-    setCollapsed(c => !c);
+    setCollapsed(c => {
+      const next = !c;
+      localStorage.setItem('sidebarCollapsed', next);
+      return next;
+    });
   }
 
   return (

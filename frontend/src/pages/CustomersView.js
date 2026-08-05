@@ -36,7 +36,7 @@ export default function CustomersView() {
     setError(null);
     try {
       const data = await getCustomers(startDate, endDate);
-      setCustomers(data);
+      setCustomers(Array.isArray(data) ? data : (data.data ?? []));
     } catch (err) {
       setError(err.message);
     } finally {
