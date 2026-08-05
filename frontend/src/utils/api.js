@@ -9,11 +9,24 @@
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8000';
 
+const FRIENDLY_ERRORS = {
+  400: 'Invalid request. Please check your inputs.',
+  401: 'You are not authorised to view this data.',
+  403: 'Access denied.',
+  404: 'The requested data could not be found.',
+  500: 'A server error occurred. Please try again later.',
+  503: 'The service is currently unavailable. Please try again later.',
+};
+
 async function apiFetch(path) {
-  const res = await fetch(`${BACKEND_URL}${path}`);
+  let res;
+  try {
+    res = await fetch(`${BACKEND_URL}${path}`);
+  } catch {
+    throw new Error('Unable to reach the server. Please check your connection.');
+  }
   if (!res.ok) {
-    const err = await res.json().catch(() => ({ detail: res.statusText }));
-    throw new Error(err.detail || `API error ${res.status}`);
+    throw new Error(FRIENDLY_ERRORS[res.status] || 'Something went wrong. Please try again.');
   }
   return res.json();
 }
@@ -22,6 +35,6 @@ export async function authorize()       { return apiFetch('/authorize'); }
 export async function getHealth()       { return apiFetch('/health'); }
 export async function getSummary()      { return apiFetch('/franchise/summary'); }
 export async function getOrders(s, e)   { return apiFetch(`/franchise/orders?start=${s}&end=${e}`); }
-export async function getProducts(s, e) { return apiFetch(`/franchise/products?start=${s}&end=${e}`); }
-export async function getCustomers(s,e) { return apiFetch(`/franchise/customers?start=${s}&end=${e}`); }
-export async function getCities(s, e)   { return apiFetch(`/franchise/cities?start=${s}&end=${e}`); }
+export async function getProducts(s, e) { return apiFetch(`/franchise/products?start=${s}&end=${e}`).then(r => r.data); }
+export async function getCustomers(s,e) { return apiFetch(`/franchise/customers?start=${s}&end=${e}`).then(r => r.data); }
+export async function getCities(s, e)   { return apiFetch(`/franchise/cities?start=${s}&end=${e}`).then(r => r.data); }

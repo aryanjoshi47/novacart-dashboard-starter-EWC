@@ -15,8 +15,9 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
+import { BarChart, Bar, LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import Navbar from '../components/Navbar';
+import ErrorPage from '../components/ErrorPage';
 import { getSummary, getOrders, getCities } from '../utils/api';
 
 export default function OrdersView() {
@@ -49,10 +50,17 @@ export default function OrdersView() {
     }
   }
 
+  if (error) return <ErrorPage message={error} onRetry={loadData} />;
+
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg-primary)' }}>
       <Navbar />
       <div className="page">
+
+        <div className="page-header">
+          <h1>Orders Overview</h1>
+          <p>Monthly revenue, order volume and geographic breakdown</p>
+        </div>
 
         {/* ── Filter bar ─────────────────────────────────────────────────── */}
         <div className="filter-bar">
@@ -62,13 +70,6 @@ export default function OrdersView() {
           <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} />
           <button className="btn-apply" onClick={loadData}>Apply</button>
         </div>
-
-        {/* ── Error state ────────────────────────────────────────────────── */}
-        {error && (
-          <div style={{ color: '#C62828', padding: 16, background: '#FFEBEE', borderRadius: 8, marginBottom: 16 }}>
-            Error: {error}
-          </div>
-        )}
 
         {/* ── Loading state ──────────────────────────────────────────────── */}
         {loading && <div className="loading">Loading orders data…</div>}
@@ -92,8 +93,8 @@ export default function OrdersView() {
                 <div className="value">{summary?.total_orders?.toLocaleString()}</div>
               </div>
               <div className="stat-box">
-                <div className="label">Unique Customers</div>
-                <div className="value">{summary?.unique_customers?.toLocaleString()}</div>
+                <div className="label">Active Customers</div>
+                <div className="value">{summary?.active_customers?.toLocaleString()}</div>
               </div>
             </div>
 
@@ -107,13 +108,13 @@ export default function OrdersView() {
               <div className="section-title" style={{ marginBottom: 16 }}>Monthly Revenue</div>
               {/* TODO: add your chart here */}
               <ResponsiveContainer width="100%" height={250}>
-                <BarChart data={orders}>
+                <LineChart data={orders}>
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
                   <XAxis dataKey="month_name" tick={{ fontSize: 12, fill: 'var(--text-muted)' }} />
                   <YAxis tickFormatter={v => `$${(v/1000).toFixed(0)}K`} tick={{ fontSize: 12, fill: 'var(--text-muted)' }} />
                   <Tooltip formatter={v => [`$${v.toLocaleString()}`, 'Revenue']} />
-                  <Bar dataKey="revenue" fill="var(--accent)" radius={[4, 4, 0, 0]} />
-                </BarChart>
+                  <Line type="linear" dataKey="revenue" stroke="var(--accent)" strokeWidth={2} dot={{ r: 4, fill: 'var(--accent)' }} activeDot={{ r: 6 }} />
+                </LineChart>
               </ResponsiveContainer>
             </div>
 
@@ -133,7 +134,7 @@ export default function OrdersView() {
                   <XAxis type="number" tickFormatter={v => `$${(v/1000).toFixed(0)}K`} tick={{ fontSize: 12, fill: 'var(--text-muted)' }} />
                   <YAxis type="category" dataKey="city" width={120} tick={{ fontSize: 12, fill: 'var(--text-muted)' }} />
                   <Tooltip formatter={v => [`$${v.toLocaleString()}`, 'Revenue']} />
-                  <Bar dataKey="revenue" fill="var(--blue)" radius={[0, 4, 4, 0]} />
+                  <Bar dataKey="total_revenue" fill="var(--blue)" radius={[0, 4, 4, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>

@@ -13,6 +13,7 @@
 import React, { useState, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import Navbar from '../components/Navbar';
+import ErrorPage from '../components/ErrorPage';
 import { getProducts } from '../utils/api';
 
 // Format currency helper
@@ -45,10 +46,17 @@ export default function ProductsView() {
     }
   }
 
+  if (error) return <ErrorPage message={error} onRetry={loadData} />;
+
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg-primary)' }}>
       <Navbar />
       <div className="page">
+
+        <div className="page-header">
+          <h1>Product Performance</h1>
+          <p>Top products by revenue and detailed breakdown</p>
+        </div>
 
         <div className="filter-bar">
           <label>From</label>
@@ -57,12 +65,6 @@ export default function ProductsView() {
           <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} />
           <button className="btn-apply" onClick={loadData}>Apply</button>
         </div>
-
-        {error && (
-          <div style={{ color: '#C62828', padding: 16, background: '#FFEBEE', borderRadius: 8, marginBottom: 16 }}>
-            Error: {error}
-          </div>
-        )}
 
         {loading && <div className="loading">Loading products data…</div>}
 
@@ -82,7 +84,7 @@ export default function ProductsView() {
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={products.slice(0, 10)} layout="vertical">
                   <XAxis type="number" tickFormatter={v => `$${(v/1000).toFixed(0)}K`} tick={{ fontSize: 11, fill: 'var(--text-muted)' }} />
-                  <YAxis type="category" dataKey="name" width={130} tick={{ fontSize: 11, fill: 'var(--text-muted)' }}
+                  <YAxis type="category" dataKey="product_name" width={130} tick={{ fontSize: 11, fill: 'var(--text-muted)' }}
                     tickFormatter={v => v.length > 20 ? v.slice(0, 20) + '…' : v} />
                   <Tooltip formatter={v => [formatCurrency(v), 'Revenue']} />
                   <Bar dataKey="revenue" fill="var(--accent)" radius={[0, 4, 4, 0]} />
@@ -99,22 +101,22 @@ export default function ProductsView() {
             <div className="card">
               <div className="section-title" style={{ marginBottom: 16 }}>Product Details</div>
               {/* TODO: add your table here */}
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <table className="data-table">
                 <thead>
                   <tr>
-                    <th style={{ textAlign: 'left', padding: '8px 12px', fontSize: 12, color: 'var(--text-muted)', borderBottom: '1px solid var(--border)' }}>Name</th>
-                    <th style={{ textAlign: 'left', padding: '8px 12px', fontSize: 12, color: 'var(--text-muted)', borderBottom: '1px solid var(--border)' }}>Category</th>
-                    <th style={{ textAlign: 'right', padding: '8px 12px', fontSize: 12, color: 'var(--text-muted)', borderBottom: '1px solid var(--border)' }}>Units Sold</th>
-                    <th style={{ textAlign: 'right', padding: '8px 12px', fontSize: 12, color: 'var(--text-muted)', borderBottom: '1px solid var(--border)' }}>Revenue</th>
+                    <th>Name</th>
+                    <th>Category</th>
+                    <th className="right">Units Sold</th>
+                    <th className="right">Revenue</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {products.map((p, i) => (
-                    <tr key={p.product_id} style={{ background: i % 2 === 0 ? 'var(--bg-card)' : 'var(--bg-primary)' }}>
-                      <td style={{ padding: '8px 12px', fontSize: 13, color: 'var(--text-primary)' }}>{p.name}</td>
-                      <td style={{ padding: '8px 12px', fontSize: 13, color: 'var(--text-secondary)' }}>{p.category}</td>
-                      <td style={{ padding: '8px 12px', fontSize: 13, color: 'var(--text-primary)', textAlign: 'right' }}>{p.units_sold.toLocaleString()}</td>
-                      <td style={{ padding: '8px 12px', fontSize: 13, color: 'var(--text-primary)', textAlign: 'right' }}>{formatCurrency(p.revenue)}</td>
+                  {products.map(p => (
+                    <tr key={p.product_id}>
+                      <td>{p.product_name}</td>
+                      <td className="muted">{p.category}</td>
+                      <td className="right mono">{p.units_sold.toLocaleString()}</td>
+                      <td className="right mono">{formatCurrency(p.revenue)}</td>
                     </tr>
                   ))}
                 </tbody>
