@@ -24,7 +24,8 @@ The connection and query helpers are already set up in connection.py.
 
 import os
 import time
-from fastapi import FastAPI, HTTPException, Request
+from datetime import datetime
+from fastapi import FastAPI, Depends, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from dotenv import load_dotenv
@@ -120,10 +121,38 @@ def authorize(request: Request):
     return {"user": username, "status": "authorized"}
 
 
+# ── Shared helpers ────────────────────────────────────────────────────────────
+
+def _validate_date(value: str, param_name: str) -> None:
+    """Raises HTTP 400 if value is not a valid YYYY-MM-DD date string."""
+    try:
+        datetime.strptime(value, "%Y-%m-%d")
+    except ValueError:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid date format for '{param_name}': '{value}'. Expected YYYY-MM-DD.",
+        )
+
+
+def _require_auth(request: Request) -> None:
+    """
+    FastAPI dependency — enforces authorization on franchise endpoints.
+
+    Dev mode:   passes all requests through (CLIENT_VALIDATION=Dev).
+    Production: requires the Sf-Context-Current-User header injected by SPCS OAuth.
+                Returns HTTP 401 if the header is absent.
+    """
+    if CLIENT_VALIDATION == "Dev":
+        return
+    if not request.headers.get("sf-context-current-user"):
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
+
 # ── Franchise endpoints ───────────────────────────────────────────────────────
 
-@app.get("/franchise/summary", tags=["Franchise"])
-def get_summary():
+@app.get("/franchise/{franchise_id}/summary", tags=["Franchise"],
+         dependencies=[Depends(_require_auth)])
+def get_summary(franchise_id: int):
     """
     Returns an overview of all orders in the database:
     - Total revenue (delivered + shipped orders only)
@@ -131,8 +160,12 @@ def get_summary():
     - Number of unique customers
     - Date range of available data
 
-    Expected response:
+    Path parameter:
+      franchise_id: unique ID of the franchise (integer)
+
+    Response:
     {
+        "franchise_id": 1,
         "total_revenue": 1284750.00,
         "total_orders": 8432,
         "unique_customers": 380,
@@ -143,7 +176,7 @@ def get_summary():
         SELECT
             COUNT(DISTINCT order_id)    AS total_orders,
             SUM(amount)                 AS total_revenue,
-            COUNT(DISTINCT customer_id) AS unique_customers,
+            COUNT(DISTINCT customer_id) AS active_customers,
             MIN(order_date)             AS start_date,
             MAX(order_date)             AS end_date
         FROM fact_orders
@@ -153,26 +186,28 @@ def get_summary():
     conn    = get_connection()
     results = execute_query(conn, _SQL)
 
-    if not results:
-        raise HTTPException(status_code=404, detail="No order data found")
-
-    row = results[0]
+    row = results[0] if results else {}
     return {
-        "total_revenue":    round(row["total_revenue"] or 0, 2),
-        "total_orders":     row["total_orders"],
-        "unique_customers": row["unique_customers"],
+        "franchise_id":      franchise_id,
+        "total_revenue":     round(row.get("total_revenue") or 0, 2),
+        "total_orders":      row.get("total_orders") or 0,
+        "active_customers":  row.get("active_customers") or 0,
         "date_range": {
-            "start": row["start_date"],
-            "end":   row["end_date"],
+            "start": row.get("start_date"),
+            "end":   row.get("end_date"),
         },
     }
 
 
-@app.get("/franchise/orders", tags=["Franchise"])
-def get_orders(start: str = "2022-01-01", end: str = "2022-12-31"):
+@app.get("/franchise/{franchise_id}/orders", tags=["Franchise"],
+         dependencies=[Depends(_require_auth)])
+def get_orders(franchise_id: int, start: str = "2022-01-01", end: str = "2022-12-31"):
     """
     Returns monthly order volume and revenue for the given date range.
     Used to power the orders overview chart.
+
+    Path parameter:
+      franchise_id: unique ID of the franchise (integer)
 
     Query parameters:
       start: start date (YYYY-MM-DD)
@@ -198,15 +233,21 @@ def get_orders(start: str = "2022-01-01", end: str = "2022-12-31"):
         ORDER BY dd.year, dd.month
     """
 
+    _validate_date(start, "start")
+    _validate_date(end, "end")
     conn    = get_connection()
     results = execute_query(conn, _SQL, params=(start, end))
     return results
 
 
-@app.get("/franchise/products", tags=["Franchise"])
-def get_products(start: str = "2022-01-01", end: str = "2022-12-31"):
+@app.get("/franchise/{franchise_id}/products", tags=["Franchise"],
+         dependencies=[Depends(_require_auth)])
+def get_products(franchise_id: int, start: str = "2022-01-01", end: str = "2022-12-31"):
     """
     Returns the top 10 products by revenue for the given date range.
+
+    Path parameter:
+      franchise_id: unique ID of the franchise (integer)
 
     Query parameters:
       start: start date (YYYY-MM-DD)
@@ -214,14 +255,14 @@ def get_products(start: str = "2022-01-01", end: str = "2022-12-31"):
 
     Response:
     [
-        { "product_id": "P001", "name": "Wireless Headphones", "category": "Electronics",
+        { "product_id": "P001", "product_name": "Wireless Headphones", "category": "Electronics",
           "units_sold": 342, "revenue": 30578.58 }
     ]
     """
     _SQL = """
         SELECT
             dp.product_id,
-            dp.name,
+            dp.name                     AS product_name,
             dp.category,
             SUM(fo.quantity)            AS units_sold,
             ROUND(SUM(fo.amount), 2)    AS revenue
@@ -234,15 +275,21 @@ def get_products(start: str = "2022-01-01", end: str = "2022-12-31"):
         LIMIT 10
     """
 
+    _validate_date(start, "start")
+    _validate_date(end, "end")
     conn    = get_connection()
     results = execute_query(conn, _SQL, params=(start, end))
     return results
 
 
-@app.get("/franchise/customers", tags=["Franchise"])
-def get_customers(start: str = "2022-01-01", end: str = "2022-12-31"):
+@app.get("/franchise/{franchise_id}/customers", tags=["Franchise"],
+         dependencies=[Depends(_require_auth)])
+def get_customers(franchise_id: int, start: str = "2022-01-01", end: str = "2022-12-31"):
     """
     Returns the top 20 customers by total spend for the given date range.
+
+    Path parameter:
+      franchise_id: unique ID of the franchise (integer)
 
     Query parameters:
       start: start date (YYYY-MM-DD)
@@ -272,16 +319,22 @@ def get_customers(start: str = "2022-01-01", end: str = "2022-12-31"):
         LIMIT 20
     """
 
+    _validate_date(start, "start")
+    _validate_date(end, "end")
     conn    = get_connection()
     results = execute_query(conn, _SQL, params=(start, end))
     return results
 
 
-@app.get("/franchise/cities", tags=["Franchise"])
-def get_cities(start: str = "2022-01-01", end: str = "2022-12-31"):
+@app.get("/franchise/{franchise_id}/countries", tags=["Franchise"],
+         dependencies=[Depends(_require_auth)])
+def get_countries(franchise_id: int, start: str = "2022-01-01", end: str = "2022-12-31"):
     """
     Returns revenue and order count grouped by city and state.
     Used to power the geographic breakdown chart.
+
+    Path parameter:
+      franchise_id: unique ID of the franchise (integer)
 
     Query parameters:
       start: start date (YYYY-MM-DD)
@@ -289,15 +342,15 @@ def get_cities(start: str = "2022-01-01", end: str = "2022-12-31"):
 
     Response:
     [
-        { "city": "Austin", "state": "TX", "order_count": 420, "revenue": 38430.00 }
+        { "city": "Austin", "state": "TX", "total_orders": 420, "total_revenue": 38430.00 }
     ]
     """
     _SQL = """
         SELECT
             dc.addr_city                AS city,
             dc.addr_state               AS state,
-            COUNT(fo.order_id)          AS order_count,
-            ROUND(SUM(fo.amount), 2)    AS revenue
+            COUNT(fo.order_id)          AS total_orders,
+            ROUND(SUM(fo.amount), 2)    AS total_revenue
         FROM fact_orders fo
         JOIN dim_customer dc ON fo.customer_id = dc.customer_id
         WHERE fo.status IN ('delivered', 'shipped')
@@ -305,8 +358,11 @@ def get_cities(start: str = "2022-01-01", end: str = "2022-12-31"):
           AND dc.is_current = 1
         GROUP BY dc.addr_city, dc.addr_state
         ORDER BY revenue DESC
+        LIMIT 100
     """
 
+    _validate_date(start, "start")
+    _validate_date(end, "end")
     conn    = get_connection()
     results = execute_query(conn, _SQL, params=(start, end))
     return results
