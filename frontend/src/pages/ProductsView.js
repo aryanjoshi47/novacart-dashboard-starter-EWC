@@ -15,6 +15,9 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recha
 import Navbar from '../components/Navbar';
 import { getProducts } from '../utils/api';
 import { exportToExcel } from '../utils/exportExcel';
+import TopControls from '../components/TopControls';
+import ErrorPage from '../components/ErrorPage';
+import { getProducts, readStoredDate } from '../utils/api';
 
 // Format currency helper
 function formatCurrency(value) {
@@ -25,20 +28,33 @@ function formatCurrency(value) {
 }
 
 export default function ProductsView() {
-  const [startDate, setStartDate] = useState('2022-01-01');
-  const [endDate,   setEndDate]   = useState('2022-12-31');
+  const [startDate, setStartDate] = useState(() => readStoredDate('dashboardDates_start', '2022-01-01'));
+  const [endDate,   setEndDate]   = useState(() => readStoredDate('dashboardDates_end',   '2022-12-31'));
   const [products,  setProducts]  = useState([]);
   const [loading,   setLoading]   = useState(true);
   const [error,     setError]     = useState(null);
 
-  useEffect(() => { loadData(); }, []);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { loadData(startDate, endDate); }, []);
 
-  async function loadData() {
+  useEffect(() => { localStorage.setItem('dashboardDates_start', startDate); }, [startDate]);
+  useEffect(() => { localStorage.setItem('dashboardDates_end',   endDate);   }, [endDate]);
+
+  function handleReset() {
+    const currentYear = new Date().getFullYear();
+    const resetStart = `${currentYear}-01-01`;
+    const resetEnd = new Date().toISOString().split('T')[0];
+    setStartDate(resetStart);
+    setEndDate(resetEnd);
+    loadData(resetStart, resetEnd);
+  }
+
+  async function loadData(start, end) {
     setLoading(true);
     setError(null);
     try {
-      const data = await getProducts(startDate, endDate);
-      setProducts(data);
+      const data = await getProducts(start, end);
+      setProducts(Array.isArray(data) ? data : (data.data ?? []));
     } catch (err) {
       setError(err.message);
     } finally {
@@ -46,9 +62,12 @@ export default function ProductsView() {
     }
   }
 
+  if (error) return <ErrorPage message={error} onRetry={loadData} />;
+
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg-primary)' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--bg-primary)', marginLeft: 'var(--sidebar-width)', transition: 'margin-left 0.22s ease' }}>
       <Navbar />
+      <TopControls />
       <div className="page">
 
         <div className="filter-bar">
@@ -71,13 +90,9 @@ export default function ProductsView() {
           >
             ↓ Export to Excel
           </button>
+          <button className="btn-apply" onClick={() => loadData(startDate, endDate)}>Apply</button>
+          <button className="btn-apply" onClick={handleReset}>Reset</button>
         </div>
-
-        {error && (
-          <div style={{ color: '#C62828', padding: 16, background: '#FFEBEE', borderRadius: 8, marginBottom: 16 }}>
-            Error: {error}
-          </div>
-        )}
 
         {loading && <div className="loading">Loading products data…</div>}
 
@@ -86,9 +101,9 @@ export default function ProductsView() {
 
             {/*
               STEP 1 — Top products bar chart
-              products is: [{ product_id, name, category, units_sold, revenue }]
+              products is: [{ product_id, product_name, category, units_sold, revenue }]
               Use a horizontal BarChart (layout="vertical").
-              XAxis type="number", YAxis type="category" dataKey="name"
+              XAxis type="number", YAxis type="category" dataKey="product_name"
               Hint: truncate long product names to 20 chars
             */}
             <div className="card">
@@ -97,7 +112,7 @@ export default function ProductsView() {
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={products.slice(0, 10)} layout="vertical">
                   <XAxis type="number" tickFormatter={v => `$${(v/1000).toFixed(0)}K`} tick={{ fontSize: 11, fill: 'var(--text-muted)' }} />
-                  <YAxis type="category" dataKey="name" width={130} tick={{ fontSize: 11, fill: 'var(--text-muted)' }}
+                  <YAxis type="category" dataKey="product_name" width={130} tick={{ fontSize: 11, fill: 'var(--text-muted)' }}
                     tickFormatter={v => v.length > 20 ? v.slice(0, 20) + '…' : v} />
                   <Tooltip formatter={v => [formatCurrency(v), 'Revenue']} />
                   <Bar dataKey="revenue" fill="var(--accent)" radius={[0, 4, 4, 0]} />
@@ -126,7 +141,7 @@ export default function ProductsView() {
                 <tbody>
                   {products.map((p, i) => (
                     <tr key={p.product_id} style={{ background: i % 2 === 0 ? 'var(--bg-card)' : 'var(--bg-primary)' }}>
-                      <td style={{ padding: '8px 12px', fontSize: 13, color: 'var(--text-primary)' }}>{p.name}</td>
+                      <td style={{ padding: '8px 12px', fontSize: 13, color: 'var(--text-primary)' }}>{p.product_name}</td>
                       <td style={{ padding: '8px 12px', fontSize: 13, color: 'var(--text-secondary)' }}>{p.category}</td>
                       <td style={{ padding: '8px 12px', fontSize: 13, color: 'var(--text-primary)', textAlign: 'right' }}>{p.units_sold.toLocaleString()}</td>
                       <td style={{ padding: '8px 12px', fontSize: 13, color: 'var(--text-primary)', textAlign: 'right' }}>{formatCurrency(p.revenue)}</td>

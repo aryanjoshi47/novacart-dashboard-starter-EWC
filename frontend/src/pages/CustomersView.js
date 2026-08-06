@@ -14,6 +14,9 @@ import React, { useState, useEffect } from 'react';
 import Navbar from '../components/Navbar';
 import { getCustomers } from '../utils/api';
 import { exportToExcel } from '../utils/exportExcel';
+import TopControls from '../components/TopControls';
+import ErrorPage from '../components/ErrorPage';
+import { getCustomers, readStoredDate } from '../utils/api';
 
 function formatCurrency(value) {
   if (!value) return '$0';
@@ -21,22 +24,35 @@ function formatCurrency(value) {
 }
 
 export default function CustomersView() {
-  const [startDate,  setStartDate]  = useState('2022-01-01');
-  const [endDate,    setEndDate]    = useState('2022-12-31');
+  const [startDate,  setStartDate]  = useState(() => readStoredDate('dashboardDates_start', '2022-01-01'));
+  const [endDate,    setEndDate]    = useState(() => readStoredDate('dashboardDates_end',   '2022-12-31'));
   const [customers,  setCustomers]  = useState([]);
   const [sortBy,     setSortBy]     = useState('total_spent');
   const [sortDir,    setSortDir]    = useState('desc');
   const [loading,    setLoading]    = useState(true);
   const [error,      setError]      = useState(null);
 
-  useEffect(() => { loadData(); }, []);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { loadData(startDate, endDate); }, []);
 
-  async function loadData() {
+  useEffect(() => { localStorage.setItem('dashboardDates_start', startDate); }, [startDate]);
+  useEffect(() => { localStorage.setItem('dashboardDates_end',   endDate);   }, [endDate]);
+
+  function handleReset() {
+    const currentYear = new Date().getFullYear();
+    const resetStart = `${currentYear}-01-01`;
+    const resetEnd = new Date().toISOString().split('T')[0];
+    setStartDate(resetStart);
+    setEndDate(resetEnd);
+    loadData(resetStart, resetEnd);
+  }
+
+  async function loadData(start, end) {
     setLoading(true);
     setError(null);
     try {
-      const data = await getCustomers(startDate, endDate);
-      setCustomers(data);
+      const data = await getCustomers(start, end);
+      setCustomers(Array.isArray(data) ? data : (data.data ?? []));
     } catch (err) {
       setError(err.message);
     } finally {
@@ -66,9 +82,12 @@ export default function CustomersView() {
   // Sort indicator helper
   const sortIcon = (col) => sortBy === col ? (sortDir === 'asc' ? ' ↑' : ' ↓') : '';
 
+  if (error) return <ErrorPage message={error} onRetry={loadData} />;
+
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg-primary)' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--bg-primary)', marginLeft: 'var(--sidebar-width)', transition: 'margin-left 0.22s ease' }}>
       <Navbar />
+      <TopControls />
       <div className="page">
 
         <div className="filter-bar">
@@ -78,6 +97,9 @@ export default function CustomersView() {
           <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} />
           <button className="btn-apply" onClick={loadData}>Apply</button>
           <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>
+          <button className="btn-apply" onClick={() => loadData(startDate, endDate)}>Apply</button>
+          <button className="btn-apply" onClick={handleReset}>Reset</button>
+          <span style={{ marginLeft: 'auto', fontSize: 13, color: 'var(--text-muted)' }}>
             {customers.length} customers
           </span>
           <button
@@ -95,12 +117,6 @@ export default function CustomersView() {
             ↓ Export to Excel
           </button>
         </div>
-
-        {error && (
-          <div style={{ color: '#C62828', padding: 16, background: '#FFEBEE', borderRadius: 8, marginBottom: 16 }}>
-            Error: {error}
-          </div>
-        )}
 
         {loading && <div className="loading">Loading customers…</div>}
 
@@ -125,26 +141,24 @@ export default function CustomersView() {
               Format total_spent with formatCurrency().
             */}
 
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <table className="data-table">
               <thead>
                 <tr>
-                  <th onClick={() => handleSort('name')} style={{ cursor: 'pointer' }}>Name{sortIcon('name')}</th>
-                  <th onClick={() => handleSort('city')} style={{ cursor: 'pointer' }}>City{sortIcon('city')}</th>
-                  <th onClick={() => handleSort('state')} style={{ cursor: 'pointer' }}>State{sortIcon('state')}</th>
-                  <th onClick={() => handleSort('total_orders')} style={{ cursor: 'pointer' }}>Orders{sortIcon('total_orders')}</th>
-                  <th onClick={() => handleSort('total_spent')} style={{ cursor: 'pointer' }}>Total Spent{sortIcon('total_spent')}</th>
+                  <th className="sortable" onClick={() => handleSort('name')}>Name{sortIcon('name')}</th>
+                  <th className="sortable" onClick={() => handleSort('city')}>City{sortIcon('city')}</th>
+                  <th className="sortable" onClick={() => handleSort('state')}>State{sortIcon('state')}</th>
+                  <th className="sortable right" onClick={() => handleSort('total_orders')}>Orders{sortIcon('total_orders')}</th>
+                  <th className="sortable right" onClick={() => handleSort('total_spent')}>Total Spent{sortIcon('total_spent')}</th>
                 </tr>
               </thead>
               <tbody>
                 {sorted.map(c => (
                   <tr key={c.customer_id}>
                     <td>{c.name}</td>
-                    <td>{c.city}</td>
-                    <td>{c.state}</td>
-                    <td>{c.total_orders}</td>
-                    <td>
-                      {formatCurrency(c.total_spent)}
-                    </td>
+                    <td className="muted">{c.city}</td>
+                    <td className="muted">{c.state}</td>
+                    <td className="right mono">{c.total_orders}</td>
+                    <td className="right mono">{formatCurrency(c.total_spent)}</td>
                   </tr>
                 ))}
               </tbody>
