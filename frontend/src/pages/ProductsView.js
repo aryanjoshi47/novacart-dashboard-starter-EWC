@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { RotateCcw } from 'lucide-react';
+import { RotateCcw, Download, BarChart2, Table2 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import Navbar from '../components/Navbar';
 import { exportToExcel } from '../utils/exportExcel';
@@ -151,7 +151,7 @@ export default function ProductsView() {
                     className={`btn-toggle-view${chartTableView ? ' active' : ''}`}
                     onClick={() => setChartTableView(v => !v)}
                   >
-                    {chartTableView ? '📊 Chart' : '📋 Table'}
+                    {chartTableView ? <><BarChart2 size={13} strokeWidth={2} />Chart</> : <><Table2 size={13} strokeWidth={2} />Table</>}
                   </button>
                   <button
                     className="btn-card-export"
@@ -163,7 +163,7 @@ export default function ProductsView() {
                       colWidths: [{ wch: 30 }, { wch: 20 }, { wch: 14 }, { wch: 16 }],
                     }])}
                   >
-                    ↓ Export
+                    <Download size={13} strokeWidth={2} />Export
                   </button>
                 </div>
               </div>
@@ -236,7 +236,7 @@ export default function ProductsView() {
                       colWidths: [{ wch: 30 }, { wch: 20 }, { wch: 14 }, { wch: 16 }],
                     }])}
                   >
-                    ↓ Export
+                    <Download size={13} strokeWidth={2} />Export
                   </button>
                 </div>
               </div>

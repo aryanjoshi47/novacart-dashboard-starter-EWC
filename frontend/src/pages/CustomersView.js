@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { RotateCcw } from 'lucide-react';
+import { RotateCcw, Download } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import { exportToExcel } from '../utils/exportExcel';
 import TopControls from '../components/TopControls';
@@ -151,7 +151,7 @@ export default function CustomersView() {
                     colWidths: [{ wch: 24 }, { wch: 18 }, { wch: 8 }, { wch: 10 }, { wch: 16 }],
                   }])}
                 >
-                  ↓ Export
+                  <Download size={13} strokeWidth={2} />Export
                 </button>
               </div>
             </div>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { RotateCcw } from 'lucide-react';
+import { RotateCcw, Download, BarChart2, Table2 } from 'lucide-react';
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import Navbar from '../components/Navbar';
 import { exportToExcel } from '../utils/exportExcel';
@@ -40,16 +40,6 @@ export default function OrdersView() {
   const [citiesSortOrder,  setCitiesSortOrder]  = useState('desc');
 
   const isDefault = startDate === DEFAULT_START && endDate === DEFAULT_END;
-
-  // Returns true and sets error if the range exceeds 3 years
-  function rangeExceedsLimit(start, end) {
-    const diff = (new Date(end) - new Date(start)) / (1000 * 60 * 60 * 24);
-    if (diff > 366 * 3) {
-      setError('Date range cannot exceed 3 years. Please narrow your selection.');
-      return true;
-    }
-    return false;
-  }
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
@@ -200,7 +190,7 @@ export default function OrdersView() {
                     className={`btn-toggle-view${ordersTableView ? ' active' : ''}`}
                     onClick={() => setOrdersTableView(v => !v)}
                   >
-                    {ordersTableView ? '📊 Chart' : '📋 Table'}
+                    {ordersTableView ? <><BarChart2 size={13} strokeWidth={2} />Chart</> : <><Table2 size={13} strokeWidth={2} />Table</>}
                   </button>
                   <button
                     className="btn-card-export"
@@ -212,7 +202,7 @@ export default function OrdersView() {
                       colWidths: [{ wch: 14 }, { wch: 14 }, { wch: 16 }],
                     }])}
                   >
-                    ↓ Export
+                    <Download size={13} strokeWidth={2} />Export
                   </button>
                 </div>
               </div>
@@ -269,7 +259,7 @@ export default function OrdersView() {
                 className={`btn-toggle-view${citiesTableView ? ' active' : ''}`}
                 onClick={() => setCitiesTableView(v => !v)}
               >
-                {citiesTableView ? '📊 Chart' : '📋 Table'}
+                {citiesTableView ? <><BarChart2 size={13} strokeWidth={2} />Chart</> : <><Table2 size={13} strokeWidth={2} />Table</>}
               </button>
               <button
                 className="btn-card-export"
@@ -281,7 +271,7 @@ export default function OrdersView() {
                   colWidths: [{ wch: 20 }, { wch: 8 }, { wch: 14 }, { wch: 16 }],
                 }])}
               >
-                ↓ Export
+                <Download size={13} strokeWidth={2} />Export
               </button>
             </div>
           </div>

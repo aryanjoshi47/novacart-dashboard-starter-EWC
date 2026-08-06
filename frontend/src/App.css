@@ -161,7 +161,7 @@ body {
 .btn-reset:hover { background: var(--bg-primary); }
 
 .btn-export {
-  background: #1D6F42; color: white; border: none;
+  background: var(--accent); color: white; border: none;
   border-radius: 6px; padding: 7px 18px; font-size: 13px; font-weight: 500;
   cursor: pointer; display: flex; align-items: center; gap: 6px;
   margin-left: auto;
@@ -313,10 +313,11 @@ body {
 }
 
 .btn-card-export {
-  background: #1D6F42; color: white; border: none;
+  background: var(--accent); color: white; border: none;
   border-radius: 6px; padding: 5px 12px;
   font-size: 12px; font-weight: 500; cursor: pointer;
   white-space: nowrap;
+  display: inline-flex; align-items: center; gap: 5px;
 }
 .btn-card-export:hover { opacity: 0.85; }
 .btn-card-export:disabled { opacity: 0.45; cursor: not-allowed; }
@@ -327,6 +328,7 @@ body {
   border-radius: 6px; padding: 5px 12px;
   font-size: 12px; font-weight: 500; cursor: pointer;
   white-space: nowrap;
+  display: inline-flex; align-items: center; gap: 5px;
   transition: background 0.15s, color 0.15s;
 }
 .btn-toggle-view:hover { background: var(--border); color: var(--text-primary); }
