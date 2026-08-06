@@ -11,6 +11,7 @@ at /snowflake/session/token — no credentials needed in environment variables.
 """
 
 import os
+import re
 import snowflake.connector
 import sqlite3
 from pathlib import Path
@@ -117,12 +118,19 @@ def execute_query(conn, query: str, params: tuple = ()) -> list[dict]:
         conn: database connection (SQLite or Snowflake)
         query: SQL query string
         params: query parameters (always use ? — translated to %s for Snowflake automatically)
+        Write PRINTF('%02d', col) in queries — translated to LPAD(col::STRING, 2, '0') for Snowflake automatically.
 
     Returns:
         list of dicts, one per row
     """
     if DATA_BACKEND == "snowflake":
         query = query.replace("?", "%s")
+        # Translate SQLite PRINTF zero-pad to Snowflake LPAD equivalent
+        query = re.sub(
+            r"PRINTF\('%02d',\s*([^)]+)\)",
+            r"LPAD(\1::STRING, 2, '0')",
+            query,
+        )
         cursor = conn.cursor(snowflake.connector.DictCursor)
         cursor.execute(query, params)
         rows = cursor.fetchall()

@@ -87,9 +87,9 @@ export default function ProductsView() {
 
             {/*
               STEP 1 — Top products bar chart
-              products is: [{ product_id, name, category, units_sold, revenue }]
+              products is: [{ product_id, product_name, category, units_sold, revenue }]
               Use a horizontal BarChart (layout="vertical").
-              XAxis type="number", YAxis type="category" dataKey="name"
+              XAxis type="number", YAxis type="category" dataKey="product_name"
               Hint: truncate long product names to 20 chars
             */}
             <div className="card">
@@ -98,7 +98,7 @@ export default function ProductsView() {
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={products.slice(0, 10)} layout="vertical">
                   <XAxis type="number" tickFormatter={v => `$${(v/1000).toFixed(0)}K`} tick={{ fontSize: 11, fill: 'var(--text-muted)' }} />
-                  <YAxis type="category" dataKey="name" width={130} tick={{ fontSize: 11, fill: 'var(--text-muted)' }}
+                  <YAxis type="category" dataKey="product_name" width={130} tick={{ fontSize: 11, fill: 'var(--text-muted)' }}
                     tickFormatter={v => v.length > 20 ? v.slice(0, 20) + '…' : v} />
                   <Tooltip formatter={v => [formatCurrency(v), 'Revenue']} />
                   <Bar dataKey="revenue" fill="var(--accent)" radius={[0, 4, 4, 0]} />
@@ -127,7 +127,7 @@ export default function ProductsView() {
                 <tbody>
                   {products.map((p, i) => (
                     <tr key={p.product_id} style={{ background: i % 2 === 0 ? 'var(--bg-card)' : 'var(--bg-primary)' }}>
-                      <td style={{ padding: '8px 12px', fontSize: 13, color: 'var(--text-primary)' }}>{p.name}</td>
+                      <td style={{ padding: '8px 12px', fontSize: 13, color: 'var(--text-primary)' }}>{p.product_name}</td>
                       <td style={{ padding: '8px 12px', fontSize: 13, color: 'var(--text-secondary)' }}>{p.category}</td>
                       <td style={{ padding: '8px 12px', fontSize: 13, color: 'var(--text-primary)', textAlign: 'right' }}>{p.units_sold.toLocaleString()}</td>
                       <td style={{ padding: '8px 12px', fontSize: 13, color: 'var(--text-primary)', textAlign: 'right' }}>{formatCurrency(p.revenue)}</td>
