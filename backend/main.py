@@ -207,8 +207,8 @@ def get_summary():
         "total_orders":      row.get("total_orders") or 0,
         "unique_customers":  row.get("active_customers") or 0,
         "date_range": {
-            "start": row.get("start_date"),
-            "end":   row.get("end_date"),
+            "start": row.get("start_date") or "",
+            "end":   row.get("end_date")   or "",
         },
     }
 

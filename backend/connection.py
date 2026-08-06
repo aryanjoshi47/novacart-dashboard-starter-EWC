@@ -128,8 +128,13 @@ def execute_query(conn, query: str, params: tuple = ()) -> list[dict]:
         rows = cursor.fetchall()
         cursor.close()
         # Snowflake returns uppercase keys — normalize to lowercase
-        return [{k.lower(): v for k, v in row.items()} for row in rows]
+        return [_sanitise({k.lower(): v for k, v in row.items()}) for row in rows]
     else:
         cursor = conn.execute(query, params)
         rows = cursor.fetchall()
-        return [dict(row) for row in rows]
+        return [_sanitise(dict(row)) for row in rows]
+
+
+def _sanitise(row: dict) -> dict:
+    """Replace None values with empty string so JSON never contains null."""
+    return {k: ("" if v is None else v) for k, v in row.items()}
