@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { RotateCcw, Download, BarChart2, Table2 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import Navbar from '../components/Navbar';
 import { exportToExcel } from '../utils/exportExcel';
@@ -107,20 +108,26 @@ export default function ProductsView() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg-primary)', marginLeft: 'var(--sidebar-width)', transition: 'margin-left 0.22s ease' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--bg-primary)', marginLeft: 'var(--sidebar-width)', transition: 'margin-left 0.22s ease', overflowX: 'hidden' }}>
       <Navbar />
       <TopControls />
       <div className="page">
 
         <div className="filter-bar">
-          <label>From</label>
-          <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} />
-          <label>To</label>
-          <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} />
-          <button className="btn-apply" onClick={handleApply}>Apply</button>
-          {!isDefault && (
-            <button className="btn-reset" onClick={handleReset}>Reset</button>
-          )}
+          <div className="filter-bar-dates">
+            <div className="filter-bar-field">
+              <label>From</label>
+              <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} />
+            </div>
+            <div className="filter-bar-field">
+              <label>To</label>
+              <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} />
+            </div>
+          </div>
+          <div className="filter-bar-actions">
+            <button className="btn-apply" onClick={handleApply}>Apply</button>
+            <button className="btn-reset" onClick={handleReset} title="Reset dates" aria-label="Reset dates"><RotateCcw size={14} strokeWidth={2.5} /></button>
+          </div>
         </div>
 
         {error && (
@@ -144,7 +151,7 @@ export default function ProductsView() {
                     className={`btn-toggle-view${chartTableView ? ' active' : ''}`}
                     onClick={() => setChartTableView(v => !v)}
                   >
-                    {chartTableView ? '📊 Chart' : '📋 Table'}
+                    {chartTableView ? <><BarChart2 size={13} strokeWidth={2} />Chart</> : <><Table2 size={13} strokeWidth={2} />Table</>}
                   </button>
                   <button
                     className="btn-card-export"
@@ -156,7 +163,7 @@ export default function ProductsView() {
                       colWidths: [{ wch: 30 }, { wch: 20 }, { wch: 14 }, { wch: 16 }],
                     }])}
                   >
-                    ↓ Export
+                    <Download size={13} strokeWidth={2} />Export
                   </button>
                 </div>
               </div>
@@ -229,7 +236,7 @@ export default function ProductsView() {
                       colWidths: [{ wch: 30 }, { wch: 20 }, { wch: 14 }, { wch: 16 }],
                     }])}
                   >
-                    ↓ Export
+                    <Download size={13} strokeWidth={2} />Export
                   </button>
                 </div>
               </div>

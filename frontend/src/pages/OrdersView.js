@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { RotateCcw, Download, BarChart2, Table2 } from 'lucide-react';
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import Navbar from '../components/Navbar';
 import { exportToExcel } from '../utils/exportExcel';
@@ -131,20 +132,27 @@ export default function OrdersView() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg-primary)', marginLeft: 'var(--sidebar-width)', transition: 'margin-left 0.22s ease' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--bg-primary)', marginLeft: 'var(--sidebar-width)', transition: 'margin-left 0.22s ease', overflowX: 'hidden' }}>
       <Navbar />
       <TopControls />
       <div className="page">
 
         <div className="filter-bar">
-          <label>From</label>
-          <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} />
-          <label>To</label>
-          <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} />
-          <button className="btn-apply" onClick={handleApply}>Apply</button>
-          {!isDefault && (
-            <button className="btn-reset" onClick={handleReset}>Reset</button>
-          )}
+          <div className="filter-bar-dates">
+            <div className="filter-bar-field">
+              <label>From</label>
+              <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} />
+            </div>
+            <div className="filter-bar-field">
+              <label>To</label>
+              <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} />
+            </div>
+          </div>
+          <div className="filter-bar-actions">
+            <button className="btn-apply" onClick={handleApply}>Apply</button>
+            <button className="btn-reset" onClick={handleReset} title="Reset dates" aria-label="Reset dates"><RotateCcw size={14} strokeWidth={2.5} /></button>
+          </div>
+          <span className="filter-bar-hint">Date range limit: 3 years</span>
         </div>
 
         {mainError && (
@@ -182,7 +190,7 @@ export default function OrdersView() {
                     className={`btn-toggle-view${ordersTableView ? ' active' : ''}`}
                     onClick={() => setOrdersTableView(v => !v)}
                   >
-                    {ordersTableView ? '📊 Chart' : '📋 Table'}
+                    {ordersTableView ? <><BarChart2 size={13} strokeWidth={2} />Chart</> : <><Table2 size={13} strokeWidth={2} />Table</>}
                   </button>
                   <button
                     className="btn-card-export"
@@ -194,7 +202,7 @@ export default function OrdersView() {
                       colWidths: [{ wch: 14 }, { wch: 14 }, { wch: 16 }],
                     }])}
                   >
-                    ↓ Export
+                    <Download size={13} strokeWidth={2} />Export
                   </button>
                 </div>
               </div>
@@ -251,7 +259,7 @@ export default function OrdersView() {
                 className={`btn-toggle-view${citiesTableView ? ' active' : ''}`}
                 onClick={() => setCitiesTableView(v => !v)}
               >
-                {citiesTableView ? '📊 Chart' : '📋 Table'}
+                {citiesTableView ? <><BarChart2 size={13} strokeWidth={2} />Chart</> : <><Table2 size={13} strokeWidth={2} />Table</>}
               </button>
               <button
                 className="btn-card-export"
@@ -263,7 +271,7 @@ export default function OrdersView() {
                   colWidths: [{ wch: 20 }, { wch: 8 }, { wch: 14 }, { wch: 16 }],
                 }])}
               >
-                ↓ Export
+                <Download size={13} strokeWidth={2} />Export
               </button>
             </div>
           </div>

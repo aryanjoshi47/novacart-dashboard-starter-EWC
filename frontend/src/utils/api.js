@@ -26,6 +26,15 @@ async function apiFetch(path) {
     throw new Error('Unable to reach the server. Please check your connection.');
   }
   if (!res.ok) {
+    // For 400s, read the FastAPI { detail: "..." } body for a specific message
+    if (res.status === 400) {
+      try {
+        const body = await res.json();
+        if (body?.detail) throw new Error(body.detail);
+      } catch {
+        // body wasn't JSON or had no detail — fall through to generic message
+      }
+    }
     throw new Error(FRIENDLY_ERRORS[res.status] || 'Something went wrong. Please try again.');
   }
   return res.json();

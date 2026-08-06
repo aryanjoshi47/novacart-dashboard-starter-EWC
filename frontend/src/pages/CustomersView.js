@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { RotateCcw, Download } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import { exportToExcel } from '../utils/exportExcel';
 import TopControls from '../components/TopControls';
@@ -98,20 +99,27 @@ export default function CustomersView() {
   const sortIcon = (col) => sortBy === col ? (sortDir === 'asc' ? ' ↑' : ' ↓') : '';
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg-primary)', marginLeft: 'var(--sidebar-width)', transition: 'margin-left 0.22s ease' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--bg-primary)', marginLeft: 'var(--sidebar-width)', transition: 'margin-left 0.22s ease', overflowX: 'hidden' }}>
       <Navbar />
       <TopControls />
       <div className="page">
 
         <div className="filter-bar">
-          <label>From</label>
-          <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} />
-          <label>To</label>
-          <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} />
-          <button className="btn-apply" onClick={handleApply}>Apply</button>
-          {!isDefault && (
-            <button className="btn-reset" onClick={handleReset}>Reset</button>
-          )}
+          <div className="filter-bar-dates">
+            <div className="filter-bar-field">
+              <label>From</label>
+              <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} />
+            </div>
+            <div className="filter-bar-field">
+              <label>To</label>
+              <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} />
+            </div>
+          </div>
+          <div className="filter-bar-actions">
+            <button className="btn-apply" onClick={handleApply}>Apply</button>
+            <button className="btn-reset" onClick={handleReset} title="Reset dates" aria-label="Reset dates"><RotateCcw size={14} strokeWidth={2.5} /></button>
+          </div>
+          <span className="filter-bar-hint" style={{ marginLeft: 'auto' }}>{customers.length} customers</span>
         </div>
 
         {error && (
@@ -143,7 +151,7 @@ export default function CustomersView() {
                     colWidths: [{ wch: 24 }, { wch: 18 }, { wch: 8 }, { wch: 10 }, { wch: 16 }],
                   }])}
                 >
-                  ↓ Export
+                  <Download size={13} strokeWidth={2} />Export
                 </button>
               </div>
             </div>
@@ -165,6 +173,7 @@ export default function CustomersView() {
               </select>
             </div>
 
+            <div className="table-scroll">
             <table className="data-table">
               <thead>
                 <tr>
@@ -187,6 +196,8 @@ export default function CustomersView() {
                 ))}
               </tbody>
             </table>
+            </div>
+
           </div>
         )}
         <Disclaimer />
