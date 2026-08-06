@@ -13,6 +13,7 @@
 import React, { useState, useEffect } from 'react';
 import Navbar from '../components/Navbar';
 import { getCustomers } from '../utils/api';
+import { exportToExcel } from '../utils/exportExcel';
 
 function formatCurrency(value) {
   if (!value) return '$0';
@@ -76,9 +77,23 @@ export default function CustomersView() {
           <label>To</label>
           <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} />
           <button className="btn-apply" onClick={loadData}>Apply</button>
-          <span style={{ marginLeft: 'auto', fontSize: 13, color: 'var(--text-muted)' }}>
+          <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>
             {customers.length} customers
           </span>
+          <button
+            className="btn-export"
+            disabled={loading || customers.length === 0}
+            onClick={() => exportToExcel(`customers_${startDate}_${endDate}`, [
+              {
+                sheetName: 'Customers',
+                headers: ['Name', 'City', 'State', 'Orders', 'Total Spent ($)'],
+                rows: sorted.map(c => [c.name, c.city, c.state, c.total_orders, Number(c.total_spent)]),
+                colWidths: [{ wch: 24 }, { wch: 18 }, { wch: 8 }, { wch: 10 }, { wch: 16 }],
+              },
+            ])}
+          >
+            ↓ Export to Excel
+          </button>
         </div>
 
         {error && (

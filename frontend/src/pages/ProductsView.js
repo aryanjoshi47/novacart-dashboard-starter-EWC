@@ -14,6 +14,7 @@ import React, { useState, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import Navbar from '../components/Navbar';
 import { getProducts } from '../utils/api';
+import { exportToExcel } from '../utils/exportExcel';
 
 // Format currency helper
 function formatCurrency(value) {
@@ -56,6 +57,20 @@ export default function ProductsView() {
           <label>To</label>
           <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} />
           <button className="btn-apply" onClick={loadData}>Apply</button>
+          <button
+            className="btn-export"
+            disabled={loading || products.length === 0}
+            onClick={() => exportToExcel(`products_${startDate}_${endDate}`, [
+              {
+                sheetName: 'Products',
+                headers: ['Name', 'Category', 'Units Sold', 'Revenue ($)'],
+                rows: products.map(p => [p.name, p.category, p.units_sold, p.revenue]),
+                colWidths: [{ wch: 30 }, { wch: 20 }, { wch: 14 }, { wch: 16 }],
+              },
+            ])}
+          >
+            ↓ Export to Excel
+          </button>
         </div>
 
         {error && (
