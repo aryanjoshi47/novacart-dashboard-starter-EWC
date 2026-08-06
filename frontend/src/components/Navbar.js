@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useTheme } from '../utils/ThemeContext';
+import { useUser } from '../utils/UserContext';
 import { BarChart2, Package, Users, ChevronLeft, ChevronRight, Menu, X, Sun, Moon } from 'lucide-react';
 import { getHealth } from '../utils/api';
 
-const links = [
-  { label: 'Orders',    path: '/orders',    Icon: BarChart2 },
-  { label: 'Products',  path: '/products',  Icon: Package   },
-  { label: 'Customers', path: '/customers', Icon: Users     },
+const ALL_LINKS = [
+  { label: 'Orders',    path: '/orders',    Icon: BarChart2, adminOnly: false },
+  { label: 'Products',  path: '/products',  Icon: Package,   adminOnly: false },
+  { label: 'Customers', path: '/customers', Icon: Users,     adminOnly: true  },
 ];
 
 const EXPANDED_WIDTH  = 220;
@@ -18,6 +19,10 @@ export default function Navbar() {
   const navigate = useNavigate();
   const location = useLocation();
   const { dark, toggle } = useTheme();
+  const { role } = useUser();
+
+  // Show admin-only links only when role is confirmed admin; during loading show non-admin links
+  const links = ALL_LINKS.filter(l => !l.adminOnly || role === 'admin');
 
   const [collapsed,    setCollapsed]   = useState(() => localStorage.getItem('sidebarCollapsed') === 'true');
   const [isMobile,     setIsMobile]    = useState(() => window.innerWidth <= MOBILE_BP);

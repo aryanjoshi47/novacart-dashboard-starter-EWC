@@ -210,6 +210,77 @@ body {
   display: flex; align-items: center; justify-content: center;
   height: 200px; color: var(--text-muted); font-size: 14px;
 }
+
+/* ── Skeleton loading ────────────────────────────────────────────────────── */
+
+@keyframes skeleton-shimmer {
+  0%   { background-position: -400px 0; }
+  100% { background-position:  400px 0; }
+}
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--border) 25%,
+    var(--bg-primary) 50%,
+    var(--border) 75%
+  );
+  background-size: 800px 100%;
+  animation: skeleton-shimmer 1.4s infinite linear;
+  border-radius: 6px;
+}
+
+/* Stat-box skeleton */
+.skeleton-stat-row { display: flex; gap: 16px; margin-bottom: 24px; flex-wrap: wrap; }
+.skeleton-stat-box {
+  flex: 1; min-width: 160px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px 24px;
+  box-shadow: var(--shadow);
+}
+.skeleton-stat-box .sk-label {
+  height: 10px; width: 60%; margin-bottom: 14px;
+}
+.skeleton-stat-box .sk-value {
+  height: 28px; width: 45%;
+}
+
+/* Card skeleton */
+.skeleton-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 24px;
+  box-shadow: var(--shadow);
+  margin-bottom: 20px;
+}
+.skeleton-card-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 20px;
+}
+.sk-title  { height: 14px; width: 160px; }
+.sk-btn    { height: 28px; width: 72px; border-radius: 6px; }
+
+/* Chart area skeleton */
+.sk-chart {
+  height: 270px;
+  width: 100%;
+  border-radius: 8px;
+}
+
+/* Table skeleton */
+.sk-table-row {
+  display: flex; gap: 12px; padding: 11px 0;
+  border-bottom: 1px solid var(--border);
+}
+.sk-table-row:last-child { border-bottom: none; }
+.sk-cell { height: 13px; border-radius: 4px; }
+
+/* grid-2 skeleton wrapper */
+.skeleton-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+@media (max-width: 900px) { .skeleton-grid-2 { grid-template-columns: 1fr; } }
 .error-box {
   color: #C62828; padding: 14px 18px;
   background: #FFEBEE; border-radius: 10px;

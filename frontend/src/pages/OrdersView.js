@@ -164,7 +164,25 @@ export default function OrdersView() {
 
         {/* ── Stat cards + Monthly Revenue — show skeleton while loading ── */}
         {mainLoading ? (
-          <div className="loading">Loading orders data…</div>
+          <>
+            {/* Stat box skeletons */}
+            <div className="skeleton-stat-row">
+              {[1,2,3].map(i => (
+                <div key={i} className="skeleton-stat-box">
+                  <div className="skeleton sk-label" />
+                  <div className="skeleton sk-value" />
+                </div>
+              ))}
+            </div>
+            {/* Monthly revenue card skeleton */}
+            <div className="skeleton-card">
+              <div className="skeleton-card-header">
+                <div className="skeleton sk-title" />
+                <div className="skeleton sk-btn" />
+              </div>
+              <div className="skeleton sk-chart" />
+            </div>
+          </>
         ) : !mainError && (
           <>
             <div className="stat-row">
