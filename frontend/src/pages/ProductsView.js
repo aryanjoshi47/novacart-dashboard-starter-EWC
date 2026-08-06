@@ -13,6 +13,8 @@
 import React, { useState, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import Navbar from '../components/Navbar';
+import { getProducts } from '../utils/api';
+import { exportToExcel } from '../utils/exportExcel';
 import TopControls from '../components/TopControls';
 import ErrorPage from '../components/ErrorPage';
 import { getProducts, readStoredDate } from '../utils/api';
@@ -73,6 +75,21 @@ export default function ProductsView() {
           <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} />
           <label>To</label>
           <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} />
+          <button className="btn-apply" onClick={loadData}>Apply</button>
+          <button
+            className="btn-export"
+            disabled={loading || products.length === 0}
+            onClick={() => exportToExcel(`products_${startDate}_${endDate}`, [
+              {
+                sheetName: 'Products',
+                headers: ['Name', 'Category', 'Units Sold', 'Revenue ($)'],
+                rows: products.map(p => [p.name, p.category, p.units_sold, p.revenue]),
+                colWidths: [{ wch: 30 }, { wch: 20 }, { wch: 14 }, { wch: 16 }],
+              },
+            ])}
+          >
+            ↓ Export to Excel
+          </button>
           <button className="btn-apply" onClick={() => loadData(startDate, endDate)}>Apply</button>
           <button className="btn-apply" onClick={handleReset}>Reset</button>
         </div>

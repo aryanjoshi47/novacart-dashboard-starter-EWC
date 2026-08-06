@@ -143,6 +143,15 @@ body {
 .btn-apply:hover  { opacity: 0.88; }
 .btn-apply:active { transform: scale(0.97); }
 
+.btn-export {
+  background: #1D6F42; color: white; border: none;
+  border-radius: 6px; padding: 7px 18px; font-size: 13px; font-weight: 500;
+  cursor: pointer; display: flex; align-items: center; gap: 6px;
+  margin-left: auto;
+}
+.btn-export:hover { opacity: 0.85; }
+
+.loading { display: flex; align-items: center; justify-content: center; height: 200px; color: var(--text-muted); font-size: 14px; }
 /* ── Tables ──────────────────────────────────────────────────────────────── */
 
 .data-table { width: 100%; border-collapse: collapse; }

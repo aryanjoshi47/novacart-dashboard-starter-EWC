@@ -17,6 +17,8 @@
 import React, { useState, useEffect } from 'react';
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import Navbar from '../components/Navbar';
+import { getSummary, getOrders, getCities } from '../utils/api';
+import { exportToExcel } from '../utils/exportExcel';
 import TopControls from '../components/TopControls';
 import ErrorPage from '../components/ErrorPage';
 import { getSummary, getOrders, getCities, readStoredDate } from '../utils/api';
@@ -78,6 +80,27 @@ export default function OrdersView() {
           <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} />
           <label>To</label>
           <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} />
+          <button className="btn-apply" onClick={loadData}>Apply</button>
+          <button
+            className="btn-export"
+            disabled={loading || orders.length === 0}
+            onClick={() => exportToExcel(`orders_${startDate}_${endDate}`, [
+              {
+                sheetName: 'Monthly Revenue',
+                headers: ['Month', 'Order Count', 'Revenue ($)'],
+                rows: orders.map(o => [o.month_name, o.order_count, o.revenue]),
+                colWidths: [{ wch: 14 }, { wch: 14 }, { wch: 16 }],
+              },
+              {
+                sheetName: 'Revenue by City',
+                headers: ['City', 'State', 'Order Count', 'Revenue ($)'],
+                rows: cities.map(c => [c.city, c.state, c.order_count, c.revenue]),
+                colWidths: [{ wch: 20 }, { wch: 8 }, { wch: 14 }, { wch: 16 }],
+              },
+            ])}
+          >
+            ↓ Export to Excel
+          </button>
           <button className="btn-apply" onClick={() => loadData(startDate, endDate)}>Apply</button>
           <button className="btn-apply" onClick={handleReset}>Reset</button>
         </div>
