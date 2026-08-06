@@ -14,6 +14,7 @@ import React, { useState, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import Navbar from '../components/Navbar';
 import TopControls from '../components/TopControls';
+import ErrorPage from '../components/ErrorPage';
 import { getProducts } from '../utils/api';
 
 // Format currency helper
@@ -59,6 +60,8 @@ export default function ProductsView() {
     }
   }
 
+  if (error) return <ErrorPage message={error} onRetry={loadData} />;
+
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg-primary)', marginLeft: 'var(--sidebar-width)', transition: 'margin-left 0.22s ease' }}>
       <Navbar />
@@ -73,12 +76,6 @@ export default function ProductsView() {
           <button className="btn-apply" onClick={() => loadData(startDate, endDate)}>Apply</button>
           <button className="btn-apply" onClick={handleReset}>Reset</button>
         </div>
-
-        {error && (
-          <div style={{ color: '#C62828', padding: 16, background: '#FFEBEE', borderRadius: 8, marginBottom: 16 }}>
-            Error: {error}
-          </div>
-        )}
 
         {loading && <div className="loading">Loading products data…</div>}
 

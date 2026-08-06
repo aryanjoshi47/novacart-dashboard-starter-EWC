@@ -13,6 +13,7 @@
 import React, { useState, useEffect } from 'react';
 import Navbar from '../components/Navbar';
 import TopControls from '../components/TopControls';
+import ErrorPage from '../components/ErrorPage';
 import { getCustomers } from '../utils/api';
 
 function formatCurrency(value) {
@@ -79,6 +80,8 @@ export default function CustomersView() {
   // Sort indicator helper
   const sortIcon = (col) => sortBy === col ? (sortDir === 'asc' ? ' ↑' : ' ↓') : '';
 
+  if (error) return <ErrorPage message={error} onRetry={loadData} />;
+
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg-primary)', marginLeft: 'var(--sidebar-width)', transition: 'margin-left 0.22s ease' }}>
       <Navbar />
@@ -96,12 +99,6 @@ export default function CustomersView() {
             {customers.length} customers
           </span>
         </div>
-
-        {error && (
-          <div style={{ color: '#C62828', padding: 16, background: '#FFEBEE', borderRadius: 8, marginBottom: 16 }}>
-            Error: {error}
-          </div>
-        )}
 
         {loading && <div className="loading">Loading customers…</div>}
 
@@ -126,26 +123,24 @@ export default function CustomersView() {
               Format total_spent with formatCurrency().
             */}
 
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <table className="data-table">
               <thead>
                 <tr>
-                  <th onClick={() => handleSort('name')} style={{ cursor: 'pointer' }}>Name{sortIcon('name')}</th>
-                  <th onClick={() => handleSort('city')} style={{ cursor: 'pointer' }}>City{sortIcon('city')}</th>
-                  <th onClick={() => handleSort('state')} style={{ cursor: 'pointer' }}>State{sortIcon('state')}</th>
-                  <th onClick={() => handleSort('total_orders')} style={{ cursor: 'pointer' }}>Orders{sortIcon('total_orders')}</th>
-                  <th onClick={() => handleSort('total_spent')} style={{ cursor: 'pointer' }}>Total Spent{sortIcon('total_spent')}</th>
+                  <th className="sortable" onClick={() => handleSort('name')}>Name{sortIcon('name')}</th>
+                  <th className="sortable" onClick={() => handleSort('city')}>City{sortIcon('city')}</th>
+                  <th className="sortable" onClick={() => handleSort('state')}>State{sortIcon('state')}</th>
+                  <th className="sortable right" onClick={() => handleSort('total_orders')}>Orders{sortIcon('total_orders')}</th>
+                  <th className="sortable right" onClick={() => handleSort('total_spent')}>Total Spent{sortIcon('total_spent')}</th>
                 </tr>
               </thead>
               <tbody>
                 {sorted.map(c => (
                   <tr key={c.customer_id}>
                     <td>{c.name}</td>
-                    <td>{c.city}</td>
-                    <td>{c.state}</td>
-                    <td>{c.total_orders}</td>
-                    <td>
-                      {formatCurrency(c.total_spent)}
-                    </td>
+                    <td className="muted">{c.city}</td>
+                    <td className="muted">{c.state}</td>
+                    <td className="right mono">{c.total_orders}</td>
+                    <td className="right mono">{formatCurrency(c.total_spent)}</td>
                   </tr>
                 ))}
               </tbody>

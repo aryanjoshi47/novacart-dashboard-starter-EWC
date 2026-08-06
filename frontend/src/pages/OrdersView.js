@@ -15,9 +15,10 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
+import { BarChart, Bar, LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import Navbar from '../components/Navbar';
 import TopControls from '../components/TopControls';
+import ErrorPage from '../components/ErrorPage';
 import { getSummary, getOrders, getCities } from '../utils/api';
 
 export default function OrdersView() {
@@ -63,6 +64,8 @@ export default function OrdersView() {
     }
   }
 
+  if (error) return <ErrorPage message={error} onRetry={loadData} />;
+
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg-primary)', marginLeft: 'var(--sidebar-width)', transition: 'margin-left 0.22s ease' }}>
       <Navbar />
@@ -78,13 +81,6 @@ export default function OrdersView() {
           <button className="btn-apply" onClick={() => loadData(startDate, endDate)}>Apply</button>
           <button className="btn-apply" onClick={handleReset}>Reset</button>
         </div>
-
-        {/* ── Error state ────────────────────────────────────────────────── */}
-        {error && (
-          <div style={{ color: '#C62828', padding: 16, background: '#FFEBEE', borderRadius: 8, marginBottom: 16 }}>
-            Error: {error}
-          </div>
-        )}
 
         {/* ── Loading state ──────────────────────────────────────────────── */}
         {loading && <div className="loading">Loading orders data…</div>}
@@ -123,13 +119,13 @@ export default function OrdersView() {
               <div className="section-title" style={{ marginBottom: 16 }}>Monthly Revenue</div>
               {/* TODO: add your chart here */}
               <ResponsiveContainer width="100%" height={250}>
-                <BarChart data={orders}>
+                <LineChart data={orders}>
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
                   <XAxis dataKey="month_name" tick={{ fontSize: 12, fill: 'var(--text-muted)' }} />
                   <YAxis tickFormatter={v => `$${(v/1000).toFixed(0)}K`} tick={{ fontSize: 12, fill: 'var(--text-muted)' }} />
                   <Tooltip formatter={v => [`$${v.toLocaleString()}`, 'Revenue']} />
-                  <Bar dataKey="revenue" fill="var(--accent)" radius={[4, 4, 0, 0]} />
-                </BarChart>
+                  <Line type="linear" dataKey="revenue" stroke="var(--accent)" strokeWidth={2} dot={{ r: 4, fill: 'var(--accent)' }} activeDot={{ r: 6 }} />
+                </LineChart>
               </ResponsiveContainer>
             </div>
 
