@@ -143,7 +143,7 @@ export default function ProductsView() {
           <div className="grid-2">
 
             {/* ── Card 1: Revenue chart with limit + sort controls ── */}
-            <div className="card">
+            <div className="card" style={{ minHeight: Math.max(300, chartProducts.length * 36 + 120) }}>
               <div className="card-header">
                 <div className="section-title">Products by Revenue</div>
                 <div className="card-actions">
