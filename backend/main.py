@@ -50,6 +50,15 @@ PORT              = int(os.getenv("PORT", 8000))
 CLIENT_VALIDATION = os.getenv("CLIENT_VALIDATION", "Dev")
 START_TIME        = time.time()
 
+# ── Role config ───────────────────────────────────────────────────────────────
+# ADMIN_USERS: comma-separated Snowflake usernames that receive the admin role.
+# DEMO_ROLE:   used in Dev mode to simulate a role without a real Snowflake user.
+_raw_admin_users = os.getenv("ADMIN_USERS", "")
+ADMIN_USERS = {u.strip().upper() for u in _raw_admin_users.split(",") if u.strip()}
+DEMO_ROLE   = os.getenv("DEMO_ROLE", "viewer").lower()
+if DEMO_ROLE not in ("admin", "viewer"):
+    DEMO_ROLE = "viewer"
+
 # CORS — only needed for local development
 # In SPCS, the NGINX router handles routing so CORS is not required
 if CLIENT_VALIDATION == "Dev":
@@ -108,18 +117,20 @@ def authorize(request: Request):
 
     When running inside SPCS, the platform injects the authenticated Snowflake
     username in the Sf-Context-Current-User header. This endpoint reads that
-    header and returns the user's identity so the frontend can store it.
+    header and returns the user's identity and role so the frontend can store it.
 
-    In Dev mode: returns a mock user for local development.
+    Role is "admin" if the username is in ADMIN_USERS, otherwise "viewer".
+    In Dev mode: returns a mock user with role determined by DEMO_ROLE env var.
     """
     if CLIENT_VALIDATION == "Dev":
-        return {"user": "dev_user", "status": "authorized"}
+        return {"user": "dev_user", "status": "authorized", "role": DEMO_ROLE}
 
     username = request.headers.get("sf-context-current-user")
     if not username:
         raise HTTPException(status_code=422, detail="Missing Sf-Context-Current-User header")
 
-    return {"user": username, "status": "authorized"}
+    role = "admin" if username.upper() in ADMIN_USERS else "viewer"
+    return {"user": username, "status": "authorized", "role": role}
 
 
 # ── Shared helpers ────────────────────────────────────────────────────────────
@@ -167,6 +178,23 @@ def _require_auth(request: Request) -> None:
         return
     if not request.headers.get("sf-context-current-user"):
         raise HTTPException(status_code=401, detail="Unauthorized")
+
+
+def _require_admin(request: Request) -> None:
+    """
+    FastAPI dependency — restricts an endpoint to admin users only.
+
+    Dev mode:   allows access only if DEMO_ROLE=admin.
+    Production: allows access only if the Sf-Context-Current-User is in ADMIN_USERS.
+                Returns HTTP 403 if the user is not an admin.
+    """
+    if CLIENT_VALIDATION == "Dev":
+        if DEMO_ROLE != "admin":
+            raise HTTPException(status_code=403, detail="Forbidden")
+        return
+    username = request.headers.get("sf-context-current-user")
+    if not username or username.upper() not in ADMIN_USERS:
+        raise HTTPException(status_code=403, detail="Forbidden")
 
 
 @app.get("/franchise/summary", tags=["Franchise"],
@@ -322,7 +350,7 @@ def get_products(
 
 
 @app.get("/franchise/customers", tags=["Franchise"],
-         dependencies=[Depends(_require_auth)])
+         dependencies=[Depends(_require_auth), Depends(_require_admin)])
 def get_customers(
     start:      str = "2022-01-01",
     end:        str = "2022-12-31",

@@ -129,7 +129,23 @@ export default function CustomersView() {
           </div>
         )}
 
-        {loading && <div className="loading">Loading customers…</div>}
+        {loading && (
+          <div className="skeleton-card">
+            <div className="skeleton-card-header">
+              <div className="skeleton sk-title" />
+              <div className="skeleton sk-btn" />
+            </div>
+            {[...Array(8)].map((_, i) => (
+              <div key={i} className="sk-table-row">
+                <div className="skeleton sk-cell" style={{ flex: 3 }} />
+                <div className="skeleton sk-cell" style={{ flex: 2 }} />
+                <div className="skeleton sk-cell" style={{ flex: 1 }} />
+                <div className="skeleton sk-cell" style={{ flex: 1 }} />
+                <div className="skeleton sk-cell" style={{ flex: 1.5 }} />
+              </div>
+            ))}
+          </div>
+        )}
 
         {!loading && !error && (
           <div className="card">

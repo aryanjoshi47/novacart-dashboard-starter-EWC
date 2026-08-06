@@ -137,7 +137,33 @@ export default function ProductsView() {
           </div>
         )}
 
-        {loading && <div className="loading">Loading products data…</div>}
+        {loading && (
+          <div className="skeleton-grid-2">
+            {/* Products by Revenue card skeleton */}
+            <div className="skeleton-card">
+              <div className="skeleton-card-header">
+                <div className="skeleton sk-title" />
+                <div className="skeleton sk-btn" />
+              </div>
+              <div className="skeleton sk-chart" style={{ height: 360 }} />
+            </div>
+            {/* Product Details card skeleton */}
+            <div className="skeleton-card">
+              <div className="skeleton-card-header">
+                <div className="skeleton sk-title" />
+                <div className="skeleton sk-btn" />
+              </div>
+              {[...Array(8)].map((_, i) => (
+                <div key={i} className="sk-table-row">
+                  <div className="skeleton sk-cell" style={{ flex: 3 }} />
+                  <div className="skeleton sk-cell" style={{ flex: 2 }} />
+                  <div className="skeleton sk-cell" style={{ flex: 1 }} />
+                  <div className="skeleton sk-cell" style={{ flex: 1 }} />
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {!loading && !error && (
           <div className="grid-2">
