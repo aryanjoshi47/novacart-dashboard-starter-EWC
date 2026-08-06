@@ -1,25 +1,16 @@
-/**
- * ProductsView.js — Product Performance page
- *
- * This page shows:
- *   - A bar chart of top 10 products by revenue
- *   - A table with product name, category, units sold, and revenue
- *   - A date range filter
- *
- * The data fetching is already wired up.
- * Your job: implement the UI.
- */
-
 import React, { useState, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import Navbar from '../components/Navbar';
 import { exportToExcel } from '../utils/exportExcel';
 import TopControls from '../components/TopControls';
-import ErrorPage from '../components/ErrorPage';
 import { getProducts, readStoredDate } from '../utils/api';
 import Disclaimer from '../components/Disclaimer';
 
-// Format currency helper
+const DEFAULT_START      = '2022-01-01';
+const DEFAULT_END        = '2022-12-31';
+const DEFAULT_LIMIT      = 10;
+const DEFAULT_SORT_ORDER = 'desc';
+
 function formatCurrency(value) {
   if (!value) return '$0';
   if (value >= 1000000) return `$${(value / 1000000).toFixed(1)}M`;
@@ -28,32 +19,64 @@ function formatCurrency(value) {
 }
 
 export default function ProductsView() {
-  const [startDate, setStartDate] = useState(() => readStoredDate('dashboardDates_start', '2022-01-01'));
-  const [endDate,   setEndDate]   = useState(() => readStoredDate('dashboardDates_end',   '2022-12-31'));
-  const [products,  setProducts]  = useState([]);
-  const [loading,   setLoading]   = useState(true);
-  const [error,     setError]     = useState(null);
+  const [startDate,  setStartDate]  = useState(() => readStoredDate('dashboardDates_start', DEFAULT_START));
+  const [endDate,    setEndDate]    = useState(() => readStoredDate('dashboardDates_end',   DEFAULT_END));
+  const [products,   setProducts]   = useState([]);
+  const [loading,    setLoading]    = useState(true);
+  const [error,      setError]      = useState(null);
+
+  // Chart card controls — string drafts so backspace works freely
+  const [chartLimitDraft,  setChartLimitDraft]  = useState(String(DEFAULT_LIMIT));
+  const [chartSortOrder,   setChartSortOrder]   = useState(DEFAULT_SORT_ORDER);
+  const [chartTableView,   setChartTableView]   = useState(false);
+
+  // Details card controls — independent, own string draft
+  const [detailsLimitDraft,  setDetailsLimitDraft]  = useState('20');
+  const [detailsSortOrder,   setDetailsSortOrder]   = useState('desc');
+
+  // Separate data slices
+  const [chartProducts,   setChartProducts]   = useState([]);
+  const [detailsProducts, setDetailsProducts] = useState([]);
+
+  const isDefault = startDate === DEFAULT_START && endDate === DEFAULT_END;
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => { loadData(startDate, endDate); }, []);
+  useEffect(() => { loadAll(startDate, endDate, DEFAULT_LIMIT, DEFAULT_SORT_ORDER, 20, 'desc'); }, []);
 
   useEffect(() => { localStorage.setItem('dashboardDates_start', startDate); }, [startDate]);
   useEffect(() => { localStorage.setItem('dashboardDates_end',   endDate);   }, [endDate]);
 
-  function handleReset() {
-    const resetStart = '2022-01-01';
-    const resetEnd   = '2022-12-31';
-    setStartDate(resetStart);
-    setEndDate(resetEnd);
-    loadData(resetStart, resetEnd);
+  function handleApply() {
+    if (startDate > endDate) {
+      setError('Start date must be on or before the end date.');
+      return;
+    }
+    loadAll(startDate, endDate, parseLim(chartLimitDraft), chartSortOrder, parseLim(detailsLimitDraft), detailsSortOrder);
   }
 
-  async function loadData(start, end) {
+  function handleReset() {
+    setStartDate(DEFAULT_START);
+    setEndDate(DEFAULT_END);
+    loadAll(DEFAULT_START, DEFAULT_END, parseLim(chartLimitDraft), chartSortOrder, parseLim(detailsLimitDraft), detailsSortOrder);
+  }
+
+  // Parse a string draft to a safe 1–100 integer
+  function parseLim(draft) {
+    return Math.min(100, Math.max(1, parseInt(draft, 10) || 1));
+  }
+
+  // Fetch both cards in parallel — each can have independent params
+  async function loadAll(start, end, cLimit, cSort, dLimit, dSort) {
     setLoading(true);
     setError(null);
     try {
-      const data = await getProducts(start, end);
-      setProducts(Array.isArray(data) ? data : (data.data ?? []));
+      const [chart, details] = await Promise.all([
+        getProducts(start, end, { limit: cLimit, sortOrder: cSort }),
+        getProducts(start, end, { limit: dLimit, sortOrder: dSort }),
+      ]);
+      setChartProducts(Array.isArray(chart)   ? chart   : []);
+      setDetailsProducts(Array.isArray(details) ? details : []);
+      setProducts(Array.isArray(chart) ? chart : []);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -61,7 +84,27 @@ export default function ProductsView() {
     }
   }
 
-  if (error) return <ErrorPage message={error} onRetry={() => loadData(startDate, endDate)} />;
+  function commitChartLimit() {
+    const lim = parseLim(chartLimitDraft);
+    setChartLimitDraft(String(lim));
+    applyChartControls(lim, chartSortOrder);
+  }
+
+  function commitDetailsLimit() {
+    const lim = parseLim(detailsLimitDraft);
+    setDetailsLimitDraft(String(lim));
+    applyDetailsControls(lim, detailsSortOrder);
+  }
+
+  function applyChartControls(newLimit, newSort) {
+    setChartSortOrder(newSort);
+    loadAll(startDate, endDate, newLimit, newSort, parseLim(detailsLimitDraft), detailsSortOrder);
+  }
+
+  function applyDetailsControls(newLimit, newSort) {
+    setDetailsSortOrder(newSort);
+    loadAll(startDate, endDate, parseLim(chartLimitDraft), chartSortOrder, newLimit, newSort);
+  }
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg-primary)', marginLeft: 'var(--sidebar-width)', transition: 'margin-left 0.22s ease' }}>
@@ -74,80 +117,162 @@ export default function ProductsView() {
           <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} />
           <label>To</label>
           <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} />
-          <button className="btn-apply" onClick={loadData}>Apply</button>
-          <button
-            className="btn-export"
-            disabled={loading || products.length === 0}
-            onClick={() => exportToExcel(`products_${startDate}_${endDate}`, [
-              {
-                sheetName: 'Products',
-                headers: ['Name', 'Category', 'Units Sold', 'Revenue ($)'],
-                rows: products.map(p => [p.name, p.category, p.units_sold, p.revenue]),
-                colWidths: [{ wch: 30 }, { wch: 20 }, { wch: 14 }, { wch: 16 }],
-              },
-            ])}
-          >
-            ↓ Export to Excel
-          </button>
-          <button className="btn-apply" onClick={() => loadData(startDate, endDate)}>Apply</button>
-          <button className="btn-apply" onClick={handleReset}>Reset</button>
+          <button className="btn-apply" onClick={handleApply}>Apply</button>
+          {!isDefault && (
+            <button className="btn-reset" onClick={handleReset}>Reset</button>
+          )}
         </div>
+
+        {error && (
+          <div className="error-box">
+            {error}
+            <button onClick={() => setError(null)} style={{ marginLeft: 12, background: 'none', border: 'none', cursor: 'pointer', fontWeight: 700, color: '#C62828' }}>✕</button>
+          </div>
+        )}
 
         {loading && <div className="loading">Loading products data…</div>}
 
         {!loading && !error && (
           <div className="grid-2">
 
-            {/*
-              STEP 1 — Top products bar chart
-              products is: [{ product_id, product_name, category, units_sold, revenue }]
-              Use a horizontal BarChart (layout="vertical").
-              XAxis type="number", YAxis type="category" dataKey="product_name"
-              Hint: truncate long product names to 20 chars
-            */}
+            {/* ── Card 1: Revenue chart with limit + sort controls ── */}
             <div className="card">
-              <div className="section-title" style={{ marginBottom: 16 }}>Top 10 Products by Revenue</div>
-              {/* TODO: add your bar chart here */}
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={products.slice(0, 10)} layout="vertical">
-                  <XAxis type="number" tickFormatter={v => `$${(v/1000).toFixed(0)}K`} tick={{ fontSize: 11, fill: 'var(--text-muted)' }} />
-                  <YAxis type="category" dataKey="product_name" width={130} tick={{ fontSize: 11, fill: 'var(--text-muted)' }}
-                    tickFormatter={v => v.length > 20 ? v.slice(0, 20) + '…' : v} />
-                  <Tooltip formatter={v => [formatCurrency(v), 'Revenue']} />
-                  <Bar dataKey="revenue" fill="var(--accent)" radius={[0, 4, 4, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
+              <div className="card-header">
+                <div className="section-title">Products by Revenue</div>
+                <div className="card-actions">
+                  <button
+                    className={`btn-toggle-view${chartTableView ? ' active' : ''}`}
+                    onClick={() => setChartTableView(v => !v)}
+                  >
+                    {chartTableView ? '📊 Chart' : '📋 Table'}
+                  </button>
+                  <button
+                    className="btn-card-export"
+                    disabled={chartProducts.length === 0}
+                    onClick={() => exportToExcel(`products_chart_${startDate}_${endDate}`, [{
+                      sheetName: 'Products by Revenue',
+                      headers: ['Name', 'Category', 'Units Sold', 'Revenue ($)'],
+                      rows: chartProducts.map(p => [p.product_name, p.category, p.units_sold, p.revenue]),
+                      colWidths: [{ wch: 30 }, { wch: 20 }, { wch: 14 }, { wch: 16 }],
+                    }])}
+                  >
+                    ↓ Export
+                  </button>
+                </div>
+              </div>
+
+              {/* Per-card controls */}
+              <div className="card-controls">
+                <label>Show</label>
+                <input
+                  type="number" min="1" max="100"
+                  value={chartLimitDraft}
+                  onChange={e => setChartLimitDraft(e.target.value)}
+                  onBlur={commitChartLimit}
+                  onKeyDown={e => e.key === 'Enter' && commitChartLimit()}
+                />
+                <label>Sort</label>
+                <select value={chartSortOrder} onChange={e => { setChartSortOrder(e.target.value); applyChartControls(parseLim(chartLimitDraft), e.target.value); }}>
+                  <option value="desc">Top (highest revenue)</option>
+                  <option value="asc">Bottom (lowest revenue)</option>
+                </select>
+              </div>
+
+              {chartTableView ? (
+                <div className="inline-table-wrap">
+                  <table className="data-table">
+                    <thead>
+                      <tr>
+                        <th>Name</th>
+                        <th>Category</th>
+                        <th className="right">Units Sold</th>
+                        <th className="right">Revenue</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {chartProducts.map(p => (
+                        <tr key={p.product_id}>
+                          <td>{p.product_name}</td>
+                          <td className="muted">{p.category}</td>
+                          <td className="right mono">{p.units_sold.toLocaleString()}</td>
+                          <td className="right mono">{formatCurrency(p.revenue)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <ResponsiveContainer width="100%" height={Math.max(200, chartProducts.length * 36)}>
+                  <BarChart data={chartProducts} layout="vertical" margin={{ top: 4, right: 16, bottom: 4, left: 0 }}>
+                    <XAxis type="number" tickFormatter={v => `$${(v/1000).toFixed(0)}K`} tick={{ fontSize: 11, fill: 'var(--text-muted)' }} />
+                    <YAxis type="category" dataKey="product_name" width={130} interval={0} tick={{ fontSize: 11, fill: 'var(--text-muted)' }}
+                      tickFormatter={v => v.length > 20 ? v.slice(0, 20) + '…' : v} />
+                    <Tooltip formatter={v => [formatCurrency(v), 'Revenue']} />
+                    <Bar dataKey="revenue" fill="var(--accent)" radius={[0, 4, 4, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              )}
             </div>
 
-            {/*
-              STEP 2 — Products table
-              Show all products in a table: Name | Category | Units Sold | Revenue
-              Hint: use an HTML table or build with divs.
-              Format revenue with the formatCurrency helper above.
-            */}
+            {/* ── Card 2: Product details table with independent controls ── */}
             <div className="card">
-              <div className="section-title" style={{ marginBottom: 16 }}>Product Details</div>
-              {/* TODO: add your table here */}
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                <thead>
-                  <tr>
-                    <th style={{ textAlign: 'left', padding: '8px 12px', fontSize: 12, color: 'var(--text-muted)', borderBottom: '1px solid var(--border)' }}>Name</th>
-                    <th style={{ textAlign: 'left', padding: '8px 12px', fontSize: 12, color: 'var(--text-muted)', borderBottom: '1px solid var(--border)' }}>Category</th>
-                    <th style={{ textAlign: 'right', padding: '8px 12px', fontSize: 12, color: 'var(--text-muted)', borderBottom: '1px solid var(--border)' }}>Units Sold</th>
-                    <th style={{ textAlign: 'right', padding: '8px 12px', fontSize: 12, color: 'var(--text-muted)', borderBottom: '1px solid var(--border)' }}>Revenue</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {products.map((p, i) => (
-                    <tr key={p.product_id} style={{ background: i % 2 === 0 ? 'var(--bg-card)' : 'var(--bg-primary)' }}>
-                      <td style={{ padding: '8px 12px', fontSize: 13, color: 'var(--text-primary)' }}>{p.product_name}</td>
-                      <td style={{ padding: '8px 12px', fontSize: 13, color: 'var(--text-secondary)' }}>{p.category}</td>
-                      <td style={{ padding: '8px 12px', fontSize: 13, color: 'var(--text-primary)', textAlign: 'right' }}>{p.units_sold.toLocaleString()}</td>
-                      <td style={{ padding: '8px 12px', fontSize: 13, color: 'var(--text-primary)', textAlign: 'right' }}>{formatCurrency(p.revenue)}</td>
+              <div className="card-header">
+                <div className="section-title">Product Details</div>
+                <div className="card-actions">
+                  <button
+                    className="btn-card-export"
+                    disabled={detailsProducts.length === 0}
+                    onClick={() => exportToExcel(`products_details_${startDate}_${endDate}`, [{
+                      sheetName: 'Product Details',
+                      headers: ['Name', 'Category', 'Units Sold', 'Revenue ($)'],
+                      rows: detailsProducts.map(p => [p.product_name, p.category, p.units_sold, p.revenue]),
+                      colWidths: [{ wch: 30 }, { wch: 20 }, { wch: 14 }, { wch: 16 }],
+                    }])}
+                  >
+                    ↓ Export
+                  </button>
+                </div>
+              </div>
+
+              {/* Per-card controls */}
+              <div className="card-controls">
+                <label>Show</label>
+                <input
+                  type="number" min="1" max="100"
+                  value={detailsLimitDraft}
+                  onChange={e => setDetailsLimitDraft(e.target.value)}
+                  onBlur={commitDetailsLimit}
+                  onKeyDown={e => e.key === 'Enter' && commitDetailsLimit()}
+                />
+                <label>Sort</label>
+                <select value={detailsSortOrder} onChange={e => { setDetailsSortOrder(e.target.value); applyDetailsControls(parseLim(detailsLimitDraft), e.target.value); }}>
+                  <option value="desc">Top (highest revenue)</option>
+                  <option value="asc">Bottom (lowest revenue)</option>
+                </select>
+              </div>
+
+              <div className="inline-table-wrap">
+                <table className="data-table">
+                  <thead>
+                    <tr>
+                      <th>Name</th>
+                      <th>Category</th>
+                      <th className="right">Units Sold</th>
+                      <th className="right">Revenue</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {detailsProducts.map(p => (
+                      <tr key={p.product_id}>
+                        <td>{p.product_name}</td>
+                        <td className="muted">{p.category}</td>
+                        <td className="right mono">{p.units_sold.toLocaleString()}</td>
+                        <td className="right mono">{formatCurrency(p.revenue)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
 
           </div>
