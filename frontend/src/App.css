@@ -183,3 +183,13 @@ body {
   margin-bottom: 16px; font-size: 13px; font-weight: 500;
   border-left: 4px solid #C62828;
 }
+
+.disclaimer {
+  margin-top: 40px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+  text-align: center;
+  font-size: 11px;
+  color: var(--text-muted);
+  letter-spacing: 0.02em;
+}

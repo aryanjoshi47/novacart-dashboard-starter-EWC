@@ -15,6 +15,7 @@ import Navbar from '../components/Navbar';
 import TopControls from '../components/TopControls';
 import ErrorPage from '../components/ErrorPage';
 import { getCustomers, readStoredDate } from '../utils/api';
+import Disclaimer from '../components/Disclaimer';
 
 function formatCurrency(value) {
   if (!value) return '$0';
@@ -37,9 +38,8 @@ export default function CustomersView() {
   useEffect(() => { localStorage.setItem('dashboardDates_end',   endDate);   }, [endDate]);
 
   function handleReset() {
-    const currentYear = new Date().getFullYear();
-    const resetStart = `${currentYear}-01-01`;
-    const resetEnd = new Date().toISOString().split('T')[0];
+    const resetStart = '2022-01-01';
+    const resetEnd   = '2022-12-31';
     setStartDate(resetStart);
     setEndDate(resetEnd);
     loadData(resetStart, resetEnd);
@@ -80,7 +80,7 @@ export default function CustomersView() {
   // Sort indicator helper
   const sortIcon = (col) => sortBy === col ? (sortDir === 'asc' ? ' ↑' : ' ↓') : '';
 
-  if (error) return <ErrorPage message={error} onRetry={loadData} />;
+  if (error) return <ErrorPage message={error} onRetry={() => loadData(startDate, endDate)} />;
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg-primary)', marginLeft: 'var(--sidebar-width)', transition: 'margin-left 0.22s ease' }}>
@@ -148,6 +148,7 @@ export default function CustomersView() {
 
           </div>
         )}
+        <Disclaimer />
       </div>
     </div>
   );

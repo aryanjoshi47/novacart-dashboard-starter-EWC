@@ -20,6 +20,7 @@ import Navbar from '../components/Navbar';
 import TopControls from '../components/TopControls';
 import ErrorPage from '../components/ErrorPage';
 import { getSummary, getOrders, getCities, readStoredDate } from '../utils/api';
+import Disclaimer from '../components/Disclaimer';
 
 export default function OrdersView() {
   const [startDate, setStartDate] = useState(() => readStoredDate('dashboardDates_start', '2022-01-01'));
@@ -37,9 +38,8 @@ export default function OrdersView() {
   useEffect(() => { localStorage.setItem('dashboardDates_end',   endDate);   }, [endDate]);
 
   function handleReset() {
-    const currentYear = new Date().getFullYear();
-    const resetStart = `${currentYear}-01-01`;
-    const resetEnd = new Date().toISOString().split('T')[0];
+    const resetStart = '2022-01-01';
+    const resetEnd   = '2022-12-31';
     setStartDate(resetStart);
     setEndDate(resetEnd);
     loadData(resetStart, resetEnd);
@@ -64,7 +64,7 @@ export default function OrdersView() {
     }
   }
 
-  if (error) return <ErrorPage message={error} onRetry={loadData} />;
+  if (error) return <ErrorPage message={error} onRetry={() => loadData(startDate, endDate)} />;
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg-primary)', marginLeft: 'var(--sidebar-width)', transition: 'margin-left 0.22s ease' }}>
@@ -151,6 +151,7 @@ export default function OrdersView() {
             </div>
           </>
         )}
+        <Disclaimer />
       </div>
     </div>
   );
