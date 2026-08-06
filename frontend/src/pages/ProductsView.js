@@ -15,7 +15,7 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recha
 import Navbar from '../components/Navbar';
 import TopControls from '../components/TopControls';
 import ErrorPage from '../components/ErrorPage';
-import { getProducts } from '../utils/api';
+import { getProducts, readStoredDate } from '../utils/api';
 
 // Format currency helper
 function formatCurrency(value) {
@@ -26,8 +26,8 @@ function formatCurrency(value) {
 }
 
 export default function ProductsView() {
-  const [startDate, setStartDate] = useState(() => localStorage.getItem('dashboardDates_start') || '2022-01-01');
-  const [endDate,   setEndDate]   = useState(() => localStorage.getItem('dashboardDates_end')   || '2022-12-31');
+  const [startDate, setStartDate] = useState(() => readStoredDate('dashboardDates_start', '2022-01-01'));
+  const [endDate,   setEndDate]   = useState(() => readStoredDate('dashboardDates_end',   '2022-12-31'));
   const [products,  setProducts]  = useState([]);
   const [loading,   setLoading]   = useState(true);
   const [error,     setError]     = useState(null);

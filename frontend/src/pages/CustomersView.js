@@ -14,7 +14,7 @@ import React, { useState, useEffect } from 'react';
 import Navbar from '../components/Navbar';
 import TopControls from '../components/TopControls';
 import ErrorPage from '../components/ErrorPage';
-import { getCustomers } from '../utils/api';
+import { getCustomers, readStoredDate } from '../utils/api';
 
 function formatCurrency(value) {
   if (!value) return '$0';
@@ -22,8 +22,8 @@ function formatCurrency(value) {
 }
 
 export default function CustomersView() {
-  const [startDate,  setStartDate]  = useState(() => localStorage.getItem('dashboardDates_start') || '2022-01-01');
-  const [endDate,    setEndDate]    = useState(() => localStorage.getItem('dashboardDates_end')   || '2022-12-31');
+  const [startDate,  setStartDate]  = useState(() => readStoredDate('dashboardDates_start', '2022-01-01'));
+  const [endDate,    setEndDate]    = useState(() => readStoredDate('dashboardDates_end',   '2022-12-31'));
   const [customers,  setCustomers]  = useState([]);
   const [sortBy,     setSortBy]     = useState('total_spent');
   const [sortDir,    setSortDir]    = useState('desc');

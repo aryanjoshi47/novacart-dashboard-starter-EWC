@@ -19,11 +19,11 @@ import { BarChart, Bar, LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContai
 import Navbar from '../components/Navbar';
 import TopControls from '../components/TopControls';
 import ErrorPage from '../components/ErrorPage';
-import { getSummary, getOrders, getCities } from '../utils/api';
+import { getSummary, getOrders, getCities, readStoredDate } from '../utils/api';
 
 export default function OrdersView() {
-  const [startDate, setStartDate] = useState(() => localStorage.getItem('dashboardDates_start') || '2022-01-01');
-  const [endDate,   setEndDate]   = useState(() => localStorage.getItem('dashboardDates_end')   || '2022-12-31');
+  const [startDate, setStartDate] = useState(() => readStoredDate('dashboardDates_start', '2022-01-01'));
+  const [endDate,   setEndDate]   = useState(() => readStoredDate('dashboardDates_end',   '2022-12-31'));
   const [summary,   setSummary]   = useState(null);
   const [orders,    setOrders]    = useState([]);
   const [cities,    setCities]    = useState([]);
