@@ -19,27 +19,40 @@ import { BarChart, Bar, LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContai
 import Navbar from '../components/Navbar';
 import TopControls from '../components/TopControls';
 import ErrorPage from '../components/ErrorPage';
-import { getSummary, getOrders, getCities } from '../utils/api';
+import { getSummary, getOrders, getCities, readStoredDate } from '../utils/api';
 
 export default function OrdersView() {
-  const [startDate, setStartDate] = useState('2022-01-01');
-  const [endDate,   setEndDate]   = useState('2022-12-31');
+  const [startDate, setStartDate] = useState(() => readStoredDate('dashboardDates_start', '2022-01-01'));
+  const [endDate,   setEndDate]   = useState(() => readStoredDate('dashboardDates_end',   '2022-12-31'));
   const [summary,   setSummary]   = useState(null);
   const [orders,    setOrders]    = useState([]);
   const [cities,    setCities]    = useState([]);
   const [loading,   setLoading]   = useState(true);
   const [error,     setError]     = useState(null);
 
-  useEffect(() => { loadData(); }, []);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { loadData(startDate, endDate); }, []);
 
-  async function loadData() {
+  useEffect(() => { localStorage.setItem('dashboardDates_start', startDate); }, [startDate]);
+  useEffect(() => { localStorage.setItem('dashboardDates_end',   endDate);   }, [endDate]);
+
+  function handleReset() {
+    const currentYear = new Date().getFullYear();
+    const resetStart = `${currentYear}-01-01`;
+    const resetEnd = new Date().toISOString().split('T')[0];
+    setStartDate(resetStart);
+    setEndDate(resetEnd);
+    loadData(resetStart, resetEnd);
+  }
+
+  async function loadData(start, end) {
     setLoading(true);
     setError(null);
     try {
       const [s, o, c] = await Promise.all([
-        getSummary(),
-        getOrders(startDate, endDate),
-        getCities(startDate, endDate),
+        getSummary(start, end),
+        getOrders(start, end),
+        getCities(start, end),
       ]);
       setSummary(s);
       setOrders(o);
@@ -65,7 +78,8 @@ export default function OrdersView() {
           <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} />
           <label>To</label>
           <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} />
-          <button className="btn-apply" onClick={loadData}>Apply</button>
+          <button className="btn-apply" onClick={() => loadData(startDate, endDate)}>Apply</button>
+          <button className="btn-apply" onClick={handleReset}>Reset</button>
         </div>
 
         {/* ── Loading state ──────────────────────────────────────────────── */}

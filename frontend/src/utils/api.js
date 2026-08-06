@@ -31,9 +31,15 @@ async function apiFetch(path) {
   return res.json();
 }
 
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+export function readStoredDate(key, fallback) {
+  const val = localStorage.getItem(key);
+  return (val && DATE_RE.test(val)) ? val : fallback;
+}
+
 export async function authorize()       { return apiFetch('/authorize'); }
 export async function getHealth()       { return apiFetch('/health'); }
-export async function getSummary()      { return apiFetch('/franchise/summary'); }
+export async function getSummary(s, e)  { return apiFetch(`/franchise/summary?start=${s}&end=${e}`); }
 export async function getOrders(s, e)   { return apiFetch(`/franchise/orders?start=${s}&end=${e}`); }
 export async function getProducts(s, e) { return apiFetch(`/franchise/products?start=${s}&end=${e}`).then(r => r.data); }
 export async function getCustomers(s,e) { return apiFetch(`/franchise/customers?start=${s}&end=${e}`).then(r => r.data); }
