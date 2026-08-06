@@ -11,6 +11,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import { RotateCcw } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import Navbar from '../components/Navbar';
 import TopControls from '../components/TopControls';
@@ -39,9 +40,8 @@ export default function ProductsView() {
   useEffect(() => { localStorage.setItem('dashboardDates_end',   endDate);   }, [endDate]);
 
   function handleReset() {
-    const currentYear = new Date().getFullYear();
-    const resetStart = `${currentYear}-01-01`;
-    const resetEnd = new Date().toISOString().split('T')[0];
+    const resetStart = '2022-01-01';
+    const resetEnd   = '2022-12-31';
     setStartDate(resetStart);
     setEndDate(resetEnd);
     loadData(resetStart, resetEnd);
@@ -60,21 +60,29 @@ export default function ProductsView() {
     }
   }
 
-  if (error) return <ErrorPage message={error} onRetry={loadData} />;
+  if (error) return <ErrorPage message={error} onRetry={() => loadData(startDate, endDate)} />;
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg-primary)', marginLeft: 'var(--sidebar-width)', transition: 'margin-left 0.22s ease' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--bg-primary)', marginLeft: 'var(--sidebar-width)', transition: 'margin-left 0.22s ease', overflowX: 'hidden' }}>
       <Navbar />
       <TopControls />
       <div className="page">
 
         <div className="filter-bar">
-          <label>From</label>
-          <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} />
-          <label>To</label>
-          <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} />
-          <button className="btn-apply" onClick={() => loadData(startDate, endDate)}>Apply</button>
-          <button className="btn-apply" onClick={handleReset}>Reset</button>
+          <div className="filter-bar-dates">
+            <div className="filter-bar-field">
+              <label>From</label>
+              <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} />
+            </div>
+            <div className="filter-bar-field">
+              <label>To</label>
+              <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} />
+            </div>
+          </div>
+          <div className="filter-bar-actions">
+            <button className="btn-apply" onClick={() => loadData(startDate, endDate)}>Apply</button>
+            <button className="btn-reset" onClick={handleReset} title="Reset dates" aria-label="Reset dates"><RotateCcw size={14} strokeWidth={2.5} /></button>
+          </div>
         </div>
 
         {loading && <div className="loading">Loading products data…</div>}
@@ -112,7 +120,8 @@ export default function ProductsView() {
             <div className="card">
               <div className="section-title" style={{ marginBottom: 16 }}>Product Details</div>
               {/* TODO: add your table here */}
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <div className="table-scroll">
+              <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 360 }}>
                 <thead>
                   <tr>
                     <th style={{ textAlign: 'left', padding: '8px 12px', fontSize: 12, color: 'var(--text-muted)', borderBottom: '1px solid var(--border)' }}>Name</th>
@@ -132,6 +141,7 @@ export default function ProductsView() {
                   ))}
                 </tbody>
               </table>
+              </div>
             </div>
 
           </div>

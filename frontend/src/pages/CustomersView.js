@@ -11,6 +11,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import { RotateCcw } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import TopControls from '../components/TopControls';
 import ErrorPage from '../components/ErrorPage';
@@ -83,21 +84,27 @@ export default function CustomersView() {
   if (error) return <ErrorPage message={error} onRetry={loadData} />;
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg-primary)', marginLeft: 'var(--sidebar-width)', transition: 'margin-left 0.22s ease' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--bg-primary)', marginLeft: 'var(--sidebar-width)', transition: 'margin-left 0.22s ease', overflowX: 'hidden' }}>
       <Navbar />
       <TopControls />
       <div className="page">
 
         <div className="filter-bar">
-          <label>From</label>
-          <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} />
-          <label>To</label>
-          <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} />
-          <button className="btn-apply" onClick={() => loadData(startDate, endDate)}>Apply</button>
-          <button className="btn-apply" onClick={handleReset}>Reset</button>
-          <span style={{ marginLeft: 'auto', fontSize: 13, color: 'var(--text-muted)' }}>
-            {customers.length} customers
-          </span>
+          <div className="filter-bar-dates">
+            <div className="filter-bar-field">
+              <label>From</label>
+              <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} />
+            </div>
+            <div className="filter-bar-field">
+              <label>To</label>
+              <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} />
+            </div>
+          </div>
+          <div className="filter-bar-actions">
+            <button className="btn-apply" onClick={() => loadData(startDate, endDate)}>Apply</button>
+            <button className="btn-reset" onClick={handleReset} title="Reset dates" aria-label="Reset dates"><RotateCcw size={14} strokeWidth={2.5} /></button>
+          </div>
+          <span className="filter-bar-hint" style={{ marginLeft: 'auto' }}>{customers.length} customers</span>
         </div>
 
         {loading && <div className="loading">Loading customers…</div>}
@@ -123,6 +130,7 @@ export default function CustomersView() {
               Format total_spent with formatCurrency().
             */}
 
+            <div className="table-scroll">
             <table className="data-table">
               <thead>
                 <tr>
@@ -145,6 +153,7 @@ export default function CustomersView() {
                 ))}
               </tbody>
             </table>
+            </div>
 
           </div>
         )}

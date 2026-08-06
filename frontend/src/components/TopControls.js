@@ -14,12 +14,11 @@ export default function TopControls() {
   const btnHoverBg   = dark ? '#4F5BBD' : '#00796B';
 
   return (
-    <div style={{
+    <div className="top-controls-pill" style={{
       position: 'fixed',
       bottom: 24,
       right: 24,
       zIndex: 99,
-      display: 'flex',
       alignItems: 'center',
       gap: 8,
       background: pillBg,

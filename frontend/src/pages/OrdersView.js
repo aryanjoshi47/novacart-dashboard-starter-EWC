@@ -15,10 +15,10 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import { RotateCcw } from 'lucide-react';
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import Navbar from '../components/Navbar';
 import TopControls from '../components/TopControls';
-import ErrorPage from '../components/ErrorPage';
 import { getSummary, getOrders, getCities, readStoredDate } from '../utils/api';
 
 export default function OrdersView() {
@@ -30,6 +30,16 @@ export default function OrdersView() {
   const [loading,   setLoading]   = useState(true);
   const [error,     setError]     = useState(null);
 
+  // Returns true and sets error if the range exceeds 3 years
+  function rangeExceedsLimit(start, end) {
+    const diff = (new Date(end) - new Date(start)) / (1000 * 60 * 60 * 24);
+    if (diff > 366 * 3) {
+      setError('Date range cannot exceed 3 years. Please narrow your selection.');
+      return true;
+    }
+    return false;
+  }
+
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { loadData(startDate, endDate); }, []);
 
@@ -37,15 +47,15 @@ export default function OrdersView() {
   useEffect(() => { localStorage.setItem('dashboardDates_end',   endDate);   }, [endDate]);
 
   function handleReset() {
-    const currentYear = new Date().getFullYear();
-    const resetStart = `${currentYear}-01-01`;
-    const resetEnd = new Date().toISOString().split('T')[0];
+    const resetStart = '2022-01-01';
+    const resetEnd   = '2022-12-31';
     setStartDate(resetStart);
     setEndDate(resetEnd);
     loadData(resetStart, resetEnd);
   }
 
   async function loadData(start, end) {
+    if (rangeExceedsLimit(start, end)) return;
     setLoading(true);
     setError(null);
     try {
@@ -64,23 +74,43 @@ export default function OrdersView() {
     }
   }
 
-  if (error) return <ErrorPage message={error} onRetry={loadData} />;
-
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg-primary)', marginLeft: 'var(--sidebar-width)', transition: 'margin-left 0.22s ease' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--bg-primary)', marginLeft: 'var(--sidebar-width)', transition: 'margin-left 0.22s ease', overflowX: 'hidden' }}>
       <Navbar />
       <TopControls />
       <div className="page">
 
         {/* ── Filter bar ─────────────────────────────────────────────────── */}
         <div className="filter-bar">
-          <label>From</label>
-          <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} />
-          <label>To</label>
-          <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} />
-          <button className="btn-apply" onClick={() => loadData(startDate, endDate)}>Apply</button>
-          <button className="btn-apply" onClick={handleReset}>Reset</button>
+          <div className="filter-bar-dates">
+            <div className="filter-bar-field">
+              <label>From</label>
+              <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} />
+            </div>
+            <div className="filter-bar-field">
+              <label>To</label>
+              <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} />
+            </div>
+          </div>
+          <div className="filter-bar-actions">
+            <button className="btn-apply" onClick={() => loadData(startDate, endDate)}>Apply</button>
+            <button className="btn-reset" onClick={handleReset} title="Reset dates" aria-label="Reset dates"><RotateCcw size={14} strokeWidth={2.5} /></button>
+          </div>
+          <span className="filter-bar-hint">Date range limit: 3 years</span>
         </div>
+
+        {/* ── Inline error banner ────────────────────────────────────────── */}
+        {error && (
+          <div className="error-box" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+            <span>⚠️ {error}</span>
+            <button
+              onClick={() => loadData(startDate, endDate)}
+              style={{ background: 'none', border: '1px solid #C62828', color: '#C62828', borderRadius: 6, padding: '4px 12px', fontSize: 12, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap' }}
+            >
+              Try again
+            </button>
+          </div>
+        )}
 
         {/* ── Loading state ──────────────────────────────────────────────── */}
         {loading && <div className="loading">Loading orders data…</div>}

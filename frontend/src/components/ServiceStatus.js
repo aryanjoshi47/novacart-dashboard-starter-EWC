@@ -30,7 +30,7 @@ export default function ServiceStatus() {
       <span style={{
         width: 8, height: 8, borderRadius: '50%',
         backgroundColor: colors[status],
-        boxShadow: status === 'healthy' ? `0 0 6px ${colors[status]}` : 'none',
+        boxShadow: 'none',
         display: 'inline-block',
       }} />
       <span style={{ color: colors[status], fontWeight: 500 }}>{labels[status]}</span>
