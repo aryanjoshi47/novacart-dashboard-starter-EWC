@@ -116,19 +116,27 @@ def execute_query(conn, query: str, params: tuple = ()) -> list[dict]:
     Args:
         conn: database connection (SQLite or Snowflake)
         query: SQL query string
-        params: query parameters (use ? for SQLite, %s for Snowflake)
+        params: query parameters (always use ? — translated to %s for Snowflake automatically)
 
     Returns:
         list of dicts, one per row
     """
     if DATA_BACKEND == "snowflake":
+        query = query.replace("?", "%s")
         cursor = conn.cursor(snowflake.connector.DictCursor)
-        cursor.execute(query, params)
-        rows = cursor.fetchall()
-        cursor.close()
+        try:
+            cursor.execute(query, params)
+            rows = cursor.fetchall()
+        finally:
+            cursor.close()
         # Snowflake returns uppercase keys — normalize to lowercase
-        return [{k.lower(): v for k, v in row.items()} for row in rows]
+        return [_sanitise({k.lower(): v for k, v in row.items()}) for row in rows]
     else:
         cursor = conn.execute(query, params)
         rows = cursor.fetchall()
-        return [dict(row) for row in rows]
+        return [_sanitise(dict(row)) for row in rows]
+
+
+def _sanitise(row: dict) -> dict:
+    """Replace None values with empty string so JSON never contains null."""
+    return {k: ("" if v is None else v) for k, v in row.items()}

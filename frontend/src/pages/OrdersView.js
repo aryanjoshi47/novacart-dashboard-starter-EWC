@@ -17,6 +17,7 @@
 import React, { useState, useEffect } from 'react';
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import Navbar from '../components/Navbar';
+import TopControls from '../components/TopControls';
 import ErrorPage from '../components/ErrorPage';
 import { getSummary, getOrders, getCities } from '../utils/api';
 
@@ -42,7 +43,7 @@ export default function OrdersView() {
       ]);
       setSummary(s);
       setOrders(o);
-      setCities(c);
+      setCities(Array.isArray(c) ? c : (c.data ?? []));
     } catch (err) {
       setError(err.message);
     } finally {
@@ -53,14 +54,10 @@ export default function OrdersView() {
   if (error) return <ErrorPage message={error} onRetry={loadData} />;
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg-primary)' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--bg-primary)', marginLeft: 'var(--sidebar-width)', transition: 'margin-left 0.22s ease' }}>
       <Navbar />
+      <TopControls />
       <div className="page">
-
-        <div className="page-header">
-          <h1>Orders Overview</h1>
-          <p>Monthly revenue, order volume and geographic breakdown</p>
-        </div>
 
         {/* ── Filter bar ─────────────────────────────────────────────────── */}
         <div className="filter-bar">
@@ -93,8 +90,8 @@ export default function OrdersView() {
                 <div className="value">{summary?.total_orders?.toLocaleString()}</div>
               </div>
               <div className="stat-box">
-                <div className="label">Active Customers</div>
-                <div className="value">{summary?.active_customers?.toLocaleString()}</div>
+                <div className="label">Unique Customers</div>
+                <div className="value">{summary?.unique_customers?.toLocaleString()}</div>
               </div>
             </div>
 
@@ -134,7 +131,7 @@ export default function OrdersView() {
                   <XAxis type="number" tickFormatter={v => `$${(v/1000).toFixed(0)}K`} tick={{ fontSize: 12, fill: 'var(--text-muted)' }} />
                   <YAxis type="category" dataKey="city" width={120} tick={{ fontSize: 12, fill: 'var(--text-muted)' }} />
                   <Tooltip formatter={v => [`$${v.toLocaleString()}`, 'Revenue']} />
-                  <Bar dataKey="total_revenue" fill="var(--blue)" radius={[0, 4, 4, 0]} />
+                  <Bar dataKey="revenue" fill="var(--blue)" radius={[0, 4, 4, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>

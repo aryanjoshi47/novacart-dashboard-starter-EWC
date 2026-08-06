@@ -12,6 +12,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Navbar from '../components/Navbar';
+import TopControls from '../components/TopControls';
 import ErrorPage from '../components/ErrorPage';
 import { getCustomers } from '../utils/api';
 
@@ -36,7 +37,7 @@ export default function CustomersView() {
     setError(null);
     try {
       const data = await getCustomers(startDate, endDate);
-      setCustomers(data);
+      setCustomers(Array.isArray(data) ? data : (data.data ?? []));
     } catch (err) {
       setError(err.message);
     } finally {
@@ -69,14 +70,10 @@ export default function CustomersView() {
   if (error) return <ErrorPage message={error} onRetry={loadData} />;
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg-primary)' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--bg-primary)', marginLeft: 'var(--sidebar-width)', transition: 'margin-left 0.22s ease' }}>
       <Navbar />
+      <TopControls />
       <div className="page">
-
-        <div className="page-header">
-          <h1>Customers</h1>
-          <p>Top customers ranked by total spend</p>
-        </div>
 
         <div className="filter-bar">
           <label>From</label>
