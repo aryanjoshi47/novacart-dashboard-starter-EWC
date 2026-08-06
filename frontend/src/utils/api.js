@@ -48,6 +48,19 @@ export function readStoredDate(key, fallback) {
 
 export async function authorize()       { return apiFetch('/authorize'); }
 export async function getHealth()       { return apiFetch('/health'); }
+
+/**
+ * Initiates logout.
+ * In SPCS the backend redirects to the Snowflake logout URL so we navigate
+ * directly to the endpoint and let the browser follow the redirect.
+ * In Dev mode there is no real session — the caller just clears local state.
+ */
+export async function logout() {
+  const isDev = !process.env.REACT_APP_BACKEND_URL; // REACT_APP_BACKEND_URL is unset locally
+  if (isDev) return; // nothing to do; UserContext already cleared state
+  window.location.href = `${BACKEND_URL}/logout`;
+}
+
 export async function getSummary(s, e)  { return apiFetch(`/franchise/summary?start=${s}&end=${e}`); }
 export async function getOrders(s, e)   { return apiFetch(`/franchise/orders?start=${s}&end=${e}`); }
 

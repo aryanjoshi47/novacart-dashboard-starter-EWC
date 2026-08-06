@@ -6,6 +6,7 @@ Built with FastAPI. Auto-generated docs at: http://localhost:8000/docs
 Endpoints:
   GET /health               — service health check
   GET /authorize            — SPCS OAuth flow
+  GET /logout               — end Snowflake SPCS session
   GET /franchises           — list of valid franchise IDs
   GET /franchise/summary    — overview stats
   GET /franchise/orders     — monthly order volume and revenue
@@ -28,7 +29,7 @@ import time
 from datetime import datetime
 from fastapi import FastAPI, Depends, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, RedirectResponse
 from dotenv import load_dotenv
 
 from connection import get_connection, execute_query
@@ -123,7 +124,7 @@ def authorize(request: Request):
     In Dev mode: returns a mock user with role determined by DEMO_ROLE env var.
     """
     if CLIENT_VALIDATION == "Dev":
-        return {"user": "dev_user", "status": "authorized", "role": DEMO_ROLE}
+        return {"user": None, "status": "authorized", "role": DEMO_ROLE}
 
     username = request.headers.get("sf-context-current-user")
     if not username:
@@ -131,6 +132,24 @@ def authorize(request: Request):
 
     role = "admin" if username.upper() in ADMIN_USERS else "viewer"
     return {"user": username, "status": "authorized", "role": role}
+
+
+@app.get("/logout", tags=["Auth"])
+def logout(request: Request):
+    """
+    Ends the user's session.
+
+    In SPCS: redirects to the Snowflake-injected logout URL
+    (the platform sets the Sf-Context-Logout-Url header).
+    Falls back to the service root if the header is absent.
+
+    In Dev mode: returns a JSON acknowledgement — no real session to destroy.
+    """
+    if CLIENT_VALIDATION == "Dev":
+        return {"status": "logged_out"}
+
+    logout_url = request.headers.get("sf-context-logout-url", "/")
+    return RedirectResponse(url=logout_url, status_code=302)
 
 
 # ── Shared helpers ────────────────────────────────────────────────────────────
