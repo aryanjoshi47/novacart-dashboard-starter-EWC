@@ -124,9 +124,11 @@ def execute_query(conn, query: str, params: tuple = ()) -> list[dict]:
     if DATA_BACKEND == "snowflake":
         query = query.replace("?", "%s")
         cursor = conn.cursor(snowflake.connector.DictCursor)
-        cursor.execute(query, params)
-        rows = cursor.fetchall()
-        cursor.close()
+        try:
+            cursor.execute(query, params)
+            rows = cursor.fetchall()
+        finally:
+            cursor.close()
         # Snowflake returns uppercase keys — normalize to lowercase
         return [_sanitise({k.lower(): v for k, v in row.items()}) for row in rows]
     else:

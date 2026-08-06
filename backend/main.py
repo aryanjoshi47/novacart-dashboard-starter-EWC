@@ -246,6 +246,14 @@ def get_orders(start: str = "2022-01-01", end: str = "2022-12-31"):
 
     _validate_date(start, "start")
     _validate_date(end, "end")
+
+    delta = datetime.strptime(end, "%Y-%m-%d") - datetime.strptime(start, "%Y-%m-%d")
+    if delta.days > 366 * 3:
+        raise HTTPException(
+            status_code=400,
+            detail="Date range cannot exceed 3 years. Narrow your 'start' and 'end' parameters.",
+        )
+
     conn    = get_connection()
     results = execute_query(conn, _SQL, params=(start, end))
     return results
