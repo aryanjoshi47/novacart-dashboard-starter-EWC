@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { authorize } from './api';
+import { authorize, logout as apiLogout } from './api';
 
 const UserContext = createContext();
 
@@ -21,8 +21,14 @@ export function UserProvider({ children }) {
       .finally(() => setLoading(false));
   }, []);
 
+  function logout() {
+    setUser(null);
+    setRole(null);
+    apiLogout();
+  }
+
   return (
-    <UserContext.Provider value={{ user, role, loading }}>
+    <UserContext.Provider value={{ user, role, loading, logout }}>
       {children}
     </UserContext.Provider>
   );

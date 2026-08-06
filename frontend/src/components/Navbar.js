@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useTheme } from '../utils/ThemeContext';
 import { useUser } from '../utils/UserContext';
-import { BarChart2, Package, Users, ChevronLeft, ChevronRight, Menu, X, Sun, Moon } from 'lucide-react';
+import { BarChart2, Package, Users, ChevronLeft, ChevronRight, Menu, X, Sun, Moon, LogOut } from 'lucide-react';
 import { getHealth } from '../utils/api';
 
 const ALL_LINKS = [
@@ -19,7 +19,7 @@ export default function Navbar() {
   const navigate = useNavigate();
   const location = useLocation();
   const { dark, toggle } = useTheme();
-  const { role } = useUser();
+  const { user, role, logout } = useUser();
 
   // Show admin-only links only when role is confirmed admin; during loading show non-admin links
   const links = ALL_LINKS.filter(l => !l.adminOnly || role === 'admin');
@@ -210,6 +210,27 @@ export default function Navbar() {
                   </button>
                 );
               })}
+              {/* Logout */}
+              <button
+                onClick={logout}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 12,
+                  width: '100%',
+                  background: 'transparent',
+                  border: `1px solid ${iconBorderColor}`,
+                  color: inactiveColor,
+                  borderRadius: 8,
+                  padding: '0 14px',
+                  height: 44,
+                  cursor: 'pointer',
+                  fontSize: 14, fontWeight: 500,
+                  marginTop: 2,
+                  boxSizing: 'border-box',
+                }}
+              >
+                <LogOut size={16} strokeWidth={1.8} />
+                <span>Logout{user ? ` (${user})` : ''}</span>
+              </button>
             </div>
           </>
         )}
@@ -332,6 +353,47 @@ export default function Navbar() {
             </button>
           );
         })}
+      </div>
+
+      {/* Logout — pinned to the bottom of the sidebar */}
+      <div style={{ padding: collapsed ? '12px 0' : '12px 12px', flexShrink: 0 }}>
+        {!collapsed && user && (
+          <div style={{
+            fontSize: 11, color: inactiveColor,
+            padding: '0 4px 6px',
+            whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+          }}>
+            {user}
+          </div>
+        )}
+        <button
+          onClick={logout}
+          title={collapsed ? 'Logout' : undefined}
+          style={{
+            display: 'flex', alignItems: 'center',
+            gap: collapsed ? 0 : 10,
+            justifyContent: collapsed ? 'center' : 'flex-start',
+            width: collapsed ? 44 : '100%',
+            alignSelf: collapsed ? 'center' : 'stretch',
+            background: 'transparent',
+            border: `1px solid ${iconBorderColor}`,
+            color: inactiveColor,
+            borderRadius: 8,
+            padding: collapsed ? 0 : '0 14px',
+            height: 40,
+            cursor: 'pointer',
+            fontSize: 13, fontWeight: 500,
+            boxSizing: 'border-box',
+            flexShrink: 0,
+          }}
+          onMouseEnter={e => { e.currentTarget.style.color = '#C62828'; e.currentTarget.style.borderColor = '#C62828'; }}
+          onMouseLeave={e => { e.currentTarget.style.color = inactiveColor; e.currentTarget.style.borderColor = iconBorderColor; }}
+        >
+          <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <LogOut size={15} strokeWidth={1.8} />
+          </span>
+          {!collapsed && <span style={{ whiteSpace: 'nowrap' }}>Logout</span>}
+        </button>
       </div>
 
     </nav>
