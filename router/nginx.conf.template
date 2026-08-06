@@ -7,7 +7,9 @@ http {
 
     location /api {
       rewrite /api/(.*) /$1 break;
-      proxy_pass http://$BACKEND_SERVICE/;
+      proxy_pass         http://$BACKEND_SERVICE/;
+      proxy_set_header   Sf-Context-Logout-Url    $http_sf_context_logout_url;
+      proxy_set_header   Sf-Context-Current-User  $http_sf_context_current_user;
     }
 
     location / {
