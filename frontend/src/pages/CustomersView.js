@@ -174,28 +174,32 @@ export default function CustomersView() {
             </div>
 
             <div className="table-scroll">
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th className="sortable" onClick={() => handleSort('name')}>Name{sortIcon('name')}</th>
-                  <th className="sortable" onClick={() => handleSort('city')}>City{sortIcon('city')}</th>
-                  <th className="sortable" onClick={() => handleSort('state')}>State{sortIcon('state')}</th>
-                  <th className="sortable right" onClick={() => handleSort('total_orders')}>Orders{sortIcon('total_orders')}</th>
-                  <th className="sortable right" onClick={() => handleSort('total_spent')}>Total Spent{sortIcon('total_spent')}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {sorted.map(c => (
-                  <tr key={c.customer_id}>
-                    <td>{c.name}</td>
-                    <td className="muted">{c.city}</td>
-                    <td className="muted">{c.state}</td>
-                    <td className="right mono">{c.total_orders}</td>
-                    <td className="right mono">{formatCurrency(c.total_spent)}</td>
+            {customers.length === 0 ? (
+              <div className="loading">No data available</div>
+            ) : (
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th className="sortable" onClick={() => handleSort('name')}>Name{sortIcon('name')}</th>
+                    <th className="sortable" onClick={() => handleSort('city')}>City{sortIcon('city')}</th>
+                    <th className="sortable" onClick={() => handleSort('state')}>State{sortIcon('state')}</th>
+                    <th className="sortable right" onClick={() => handleSort('total_orders')}>Orders{sortIcon('total_orders')}</th>
+                    <th className="sortable right" onClick={() => handleSort('total_spent')}>Total Spent{sortIcon('total_spent')}</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {sorted.map(c => (
+                    <tr key={c.customer_id}>
+                      <td>{c.name}</td>
+                      <td className="muted">{c.city}</td>
+                      <td className="muted">{c.state}</td>
+                      <td className="right mono">{c.total_orders}</td>
+                      <td className="right mono">{formatCurrency(c.total_spent)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
             </div>
 
           </div>

@@ -185,7 +185,9 @@ export default function ProductsView() {
                 </select>
               </div>
 
-              {chartTableView ? (
+              {chartProducts.length === 0 ? (
+                <div className="loading">No data available</div>
+              ) : chartTableView ? (
                 <div className="inline-table-wrap">
                   <table className="data-table">
                     <thead>
@@ -258,28 +260,32 @@ export default function ProductsView() {
                 </select>
               </div>
 
-              <div className="inline-table-wrap">
-                <table className="data-table">
-                  <thead>
-                    <tr>
-                      <th>Name</th>
-                      <th>Category</th>
-                      <th className="right">Units Sold</th>
-                      <th className="right">Revenue</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {detailsProducts.map(p => (
-                      <tr key={p.product_id}>
-                        <td>{p.product_name}</td>
-                        <td className="muted">{p.category}</td>
-                        <td className="right mono">{p.units_sold.toLocaleString()}</td>
-                        <td className="right mono">{formatCurrency(p.revenue)}</td>
+              {detailsProducts.length === 0 ? (
+                <div className="loading">No data available</div>
+              ) : (
+                <div className="inline-table-wrap">
+                  <table className="data-table">
+                    <thead>
+                      <tr>
+                        <th>Name</th>
+                        <th>Category</th>
+                        <th className="right">Units Sold</th>
+                        <th className="right">Revenue</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
+                    <tbody>
+                      {detailsProducts.map(p => (
+                        <tr key={p.product_id}>
+                          <td>{p.product_name}</td>
+                          <td className="muted">{p.category}</td>
+                          <td className="right mono">{p.units_sold.toLocaleString()}</td>
+                          <td className="right mono">{formatCurrency(p.revenue)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
 
           </div>

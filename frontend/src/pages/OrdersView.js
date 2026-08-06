@@ -207,7 +207,9 @@ export default function OrdersView() {
                 </div>
               </div>
 
-              {ordersTableView ? (
+              {orders.length === 0 ? (
+                <div className="loading">No data available</div>
+              ) : ordersTableView ? (
                 <div className="inline-table-wrap">
                   <table className="data-table">
                     <thead>
@@ -305,6 +307,8 @@ export default function OrdersView() {
               {citiesError}
               <button onClick={() => setCitiesError(null)} style={{ marginLeft: 12, background: 'none', border: 'none', cursor: 'pointer', fontWeight: 700, color: '#C62828' }}>✕</button>
             </div>
+          ) : cities.length === 0 ? (
+            <div className="loading">No data available</div>
           ) : citiesTableView ? (
             <div className="inline-table-wrap">
               <table className="data-table">
