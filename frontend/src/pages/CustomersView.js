@@ -12,7 +12,6 @@
 
 import React, { useState, useEffect } from 'react';
 import Navbar from '../components/Navbar';
-import { getCustomers } from '../utils/api';
 import { exportToExcel } from '../utils/exportExcel';
 import TopControls from '../components/TopControls';
 import ErrorPage from '../components/ErrorPage';
@@ -95,8 +94,6 @@ export default function CustomersView() {
           <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} />
           <label>To</label>
           <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} />
-          <button className="btn-apply" onClick={loadData}>Apply</button>
-          <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>
           <button className="btn-apply" onClick={() => loadData(startDate, endDate)}>Apply</button>
           <button className="btn-apply" onClick={handleReset}>Reset</button>
           <span style={{ marginLeft: 'auto', fontSize: 13, color: 'var(--text-muted)' }}>

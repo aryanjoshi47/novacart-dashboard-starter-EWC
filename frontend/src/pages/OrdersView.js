@@ -17,7 +17,6 @@
 import React, { useState, useEffect } from 'react';
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import Navbar from '../components/Navbar';
-import { getSummary, getOrders, getCities } from '../utils/api';
 import { exportToExcel } from '../utils/exportExcel';
 import TopControls from '../components/TopControls';
 import ErrorPage from '../components/ErrorPage';

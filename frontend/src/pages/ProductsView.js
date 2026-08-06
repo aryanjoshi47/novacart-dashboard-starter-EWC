@@ -13,7 +13,6 @@
 import React, { useState, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import Navbar from '../components/Navbar';
-import { getProducts } from '../utils/api';
 import { exportToExcel } from '../utils/exportExcel';
 import TopControls from '../components/TopControls';
 import ErrorPage from '../components/ErrorPage';
