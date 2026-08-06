@@ -1,21 +1,15 @@
-/**
- * CustomersView.js — Customer List page
- *
- * This page shows:
- *   - A sortable table of top 20 customers by revenue
- *   - Columns: Name | City | State | Orders | Total Spent
- *   - A date range filter
- *
- * The data fetching is already wired up.
- * Your job: implement the UI and the sorting logic.
- */
-
 import React, { useState, useEffect } from 'react';
 import { RotateCcw } from 'lucide-react';
 import Navbar from '../components/Navbar';
+import { exportToExcel } from '../utils/exportExcel';
 import TopControls from '../components/TopControls';
-import ErrorPage from '../components/ErrorPage';
 import { getCustomers, readStoredDate } from '../utils/api';
+import Disclaimer from '../components/Disclaimer';
+
+const DEFAULT_START      = '2022-01-01';
+const DEFAULT_END        = '2022-12-31';
+const DEFAULT_LIMIT      = 20;
+const DEFAULT_SORT_ORDER = 'desc';
 
 function formatCurrency(value) {
   if (!value) return '$0';
@@ -23,35 +17,49 @@ function formatCurrency(value) {
 }
 
 export default function CustomersView() {
-  const [startDate,  setStartDate]  = useState(() => readStoredDate('dashboardDates_start', '2022-01-01'));
-  const [endDate,    setEndDate]    = useState(() => readStoredDate('dashboardDates_end',   '2022-12-31'));
+  const [startDate,  setStartDate]  = useState(() => readStoredDate('dashboardDates_start', DEFAULT_START));
+  const [endDate,    setEndDate]    = useState(() => readStoredDate('dashboardDates_end',   DEFAULT_END));
   const [customers,  setCustomers]  = useState([]);
+  // String draft so backspace works freely; validated on blur/Enter/sort-change
+  const [limitDraft, setLimitDraft] = useState(String(DEFAULT_LIMIT));
+  const [sortOrder,  setSortOrder]  = useState(DEFAULT_SORT_ORDER);
   const [sortBy,     setSortBy]     = useState('total_spent');
   const [sortDir,    setSortDir]    = useState('desc');
   const [loading,    setLoading]    = useState(true);
   const [error,      setError]      = useState(null);
 
+  const isDefault = startDate === DEFAULT_START && endDate === DEFAULT_END;
+
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => { loadData(startDate, endDate); }, []);
+  useEffect(() => { loadData(startDate, endDate, DEFAULT_LIMIT, DEFAULT_SORT_ORDER); }, []);
 
   useEffect(() => { localStorage.setItem('dashboardDates_start', startDate); }, [startDate]);
   useEffect(() => { localStorage.setItem('dashboardDates_end',   endDate);   }, [endDate]);
 
-  function handleReset() {
-    const currentYear = new Date().getFullYear();
-    const resetStart = `${currentYear}-01-01`;
-    const resetEnd = new Date().toISOString().split('T')[0];
-    setStartDate(resetStart);
-    setEndDate(resetEnd);
-    loadData(resetStart, resetEnd);
+  function parseLim(draft) {
+    return Math.min(100, Math.max(1, parseInt(draft, 10) || 1));
   }
 
-  async function loadData(start, end) {
+  function handleApply() {
+    if (startDate > endDate) {
+      setError('Start date must be on or before the end date.');
+      return;
+    }
+    loadData(startDate, endDate, parseLim(limitDraft), sortOrder);
+  }
+
+  function handleReset() {
+    setStartDate(DEFAULT_START);
+    setEndDate(DEFAULT_END);
+    loadData(DEFAULT_START, DEFAULT_END, parseLim(limitDraft), sortOrder);
+  }
+
+  async function loadData(start, end, lim, ord) {
     setLoading(true);
     setError(null);
     try {
-      const data = await getCustomers(start, end);
-      setCustomers(Array.isArray(data) ? data : (data.data ?? []));
+      const data = await getCustomers(start, end, { limit: lim, sortOrder: ord });
+      setCustomers(Array.isArray(data) ? data : (data?.data ?? []));
     } catch (err) {
       setError(err.message);
     } finally {
@@ -59,7 +67,18 @@ export default function CustomersView() {
     }
   }
 
-  // Sort handler — toggles direction if same column, resets to desc if new column
+  function commitLimit() {
+    const lim = parseLim(limitDraft);
+    setLimitDraft(String(lim));
+    loadData(startDate, endDate, lim, sortOrder);
+  }
+
+  function applyCardControls(newLimit, newSort) {
+    setSortOrder(newSort);
+    loadData(startDate, endDate, newLimit, newSort);
+  }
+
+  // Client-side column sort (within the already-fetched page)
   function handleSort(column) {
     if (sortBy === column) {
       setSortDir(d => d === 'asc' ? 'desc' : 'asc');
@@ -69,7 +88,6 @@ export default function CustomersView() {
     }
   }
 
-  // Apply sort to customers array
   const sorted = [...customers].sort((a, b) => {
     const va = a[sortBy], vb = b[sortBy];
     if (typeof va === 'number') return sortDir === 'asc' ? va - vb : vb - va;
@@ -78,10 +96,7 @@ export default function CustomersView() {
       : String(vb).localeCompare(String(va));
   });
 
-  // Sort indicator helper
   const sortIcon = (col) => sortBy === col ? (sortDir === 'asc' ? ' ↑' : ' ↓') : '';
-
-  if (error) return <ErrorPage message={error} onRetry={loadData} />;
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg-primary)', marginLeft: 'var(--sidebar-width)', transition: 'margin-left 0.22s ease', overflowX: 'hidden' }}>
@@ -101,34 +116,62 @@ export default function CustomersView() {
             </div>
           </div>
           <div className="filter-bar-actions">
-            <button className="btn-apply" onClick={() => loadData(startDate, endDate)}>Apply</button>
+            <button className="btn-apply" onClick={handleApply}>Apply</button>
             <button className="btn-reset" onClick={handleReset} title="Reset dates" aria-label="Reset dates"><RotateCcw size={14} strokeWidth={2.5} /></button>
           </div>
           <span className="filter-bar-hint" style={{ marginLeft: 'auto' }}>{customers.length} customers</span>
         </div>
 
+        {error && (
+          <div className="error-box">
+            {error}
+            <button onClick={() => setError(null)} style={{ marginLeft: 12, background: 'none', border: 'none', cursor: 'pointer', fontWeight: 700, color: '#C62828' }}>✕</button>
+          </div>
+        )}
+
         {loading && <div className="loading">Loading customers…</div>}
 
         {!loading && !error && (
           <div className="card">
-            <div className="section-title" style={{ marginBottom: 16 }}>
-              Top Customers by Revenue
+            <div className="card-header">
+              <div className="section-title">
+                Customers by Revenue
+                <span style={{ fontSize: 12, fontWeight: 400, color: 'var(--text-muted)', marginLeft: 8 }}>
+                  {customers.length} shown
+                </span>
+              </div>
+              <div className="card-actions">
+                <button
+                  className="btn-card-export"
+                  disabled={customers.length === 0}
+                  onClick={() => exportToExcel(`customers_${startDate}_${endDate}`, [{
+                    sheetName: 'Customers',
+                    headers: ['Name', 'City', 'State', 'Orders', 'Total Spent ($)'],
+                    rows: sorted.map(c => [c.name, c.city, c.state, c.total_orders, Number(c.total_spent)]),
+                    colWidths: [{ wch: 24 }, { wch: 18 }, { wch: 8 }, { wch: 10 }, { wch: 16 }],
+                  }])}
+                >
+                  ↓ Export
+                </button>
+              </div>
             </div>
 
-            {/*
-              STEP 1 — Sortable table
-              sorted is: [{ customer_id, name, city, state, total_orders, total_spent }]
-
-              Build a table with these columns:
-                Name | City | State | Orders | Total Spent
-
-              Each column header should be clickable and call handleSort(columnName).
-              Use sortIcon(columnName) to show ↑ or ↓ on the active sort column.
-
-              Hint: use a standard HTML <table> with <thead> and <tbody>.
-              Style alternating rows with different background colors.
-              Format total_spent with formatCurrency().
-            */}
+            {/* Per-card controls */}
+            <div className="card-controls">
+              <label>Show</label>
+              <input
+                type="number" min="1" max="100"
+                value={limitDraft}
+                onChange={e => setLimitDraft(e.target.value)}
+                onBlur={commitLimit}
+                onKeyDown={e => e.key === 'Enter' && commitLimit()}
+              />
+              <label>Sort by spend</label>
+              <select value={sortOrder} onChange={e => { setSortOrder(e.target.value); applyCardControls(parseLim(limitDraft), e.target.value); }}>
+                <option value="desc">Top spenders first</option>
+                <option value="asc">Lowest spenders first</option>
+              </select>
+            </div>
 
             <div className="table-scroll">
             <table className="data-table">
@@ -157,6 +200,7 @@ export default function CustomersView() {
 
           </div>
         )}
+        <Disclaimer />
       </div>
     </div>
   );
