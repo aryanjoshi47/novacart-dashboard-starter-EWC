@@ -171,13 +171,17 @@ def _require_auth(request: Request) -> None:
 
 @app.get("/franchise/summary", tags=["Franchise"],
          dependencies=[Depends(_require_auth)])
-def get_summary():
+def get_summary(start: str = "2022-01-01", end: str = "2022-12-31"):
     """
     Returns an overview of all orders in the database:
     - Total revenue (delivered + shipped orders only)
     - Total orders
     - Number of active customers
     - Date range of available data
+
+    Query parameters:
+      start: start date (YYYY-MM-DD)
+      end:   end date (YYYY-MM-DD)
 
     Response:
     {
@@ -187,6 +191,9 @@ def get_summary():
         "date_range": { "start": "2022-01-01", "end": "2022-12-31" }
     }
     """
+    _validate_date(start, "start")
+    _validate_date(end, "end")
+
     _SQL = """
         SELECT
             COUNT(DISTINCT order_id)    AS total_orders,
@@ -196,10 +203,11 @@ def get_summary():
             MAX(order_date)             AS end_date
         FROM fact_orders
         WHERE status IN ('delivered', 'shipped')
+          AND order_date BETWEEN ? AND ?
     """
 
     conn    = get_connection()
-    results = execute_query(conn, _SQL)
+    results = execute_query(conn, _SQL, params=(start, end))
 
     row = results[0] if results else {}
     return {
