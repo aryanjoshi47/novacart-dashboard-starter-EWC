@@ -20,7 +20,7 @@ export default function ErrorPage({ message, onRetry }) {
       justifyContent: 'center',
       padding: 24,
     }}>
-      <div style={{
+      <main style={{
         background: 'var(--bg-card)',
         border: '1px solid var(--border)',
         borderRadius: 16,
@@ -29,14 +29,16 @@ export default function ErrorPage({ message, onRetry }) {
         width: '100%',
         textAlign: 'center',
         boxShadow: 'var(--shadow)',
-      }}>
-        <div style={{ fontSize: 48, marginBottom: 16 }}>⚠️</div>
-        <div style={{ fontSize: 20, fontWeight: 300, color: 'var(--text-primary)', marginBottom: 12 }}>
+      }}
+        aria-labelledby="error-heading"
+      >
+        <div aria-hidden="true" style={{ fontSize: 48, marginBottom: 16 }}>⚠️</div>
+        <h1 id="error-heading" style={{ fontSize: 20, fontWeight: 300, color: 'var(--text-primary)', marginBottom: 12 }}>
           Something went wrong
-        </div>
-        <div style={{ fontSize: 14, color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: 32 }}>
+        </h1>
+        <p style={{ fontSize: 14, color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: 32 }}>
           {message || 'An unexpected error occurred. Please try again.'}
-        </div>
+        </p>
         <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
           {onRetry && (
             <button onClick={onRetry} style={{
@@ -56,7 +58,7 @@ export default function ErrorPage({ message, onRetry }) {
             Go to Orders
           </button>
         </div>
-      </div>
+      </main>
     </div>
   );
 }

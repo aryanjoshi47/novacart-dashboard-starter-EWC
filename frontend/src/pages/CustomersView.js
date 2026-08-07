@@ -6,6 +6,12 @@ import TopControls from '../components/TopControls';
 import { getCustomers, readStoredDate } from '../utils/api';
 import Disclaimer from '../components/Disclaimer';
 
+const srOnly = {
+  position: 'absolute', width: 1, height: 1,
+  padding: 0, margin: -1, overflow: 'hidden',
+  clip: 'rect(0,0,0,0)', whiteSpace: 'nowrap', border: 0,
+};
+
 const DEFAULT_START      = '2022-01-01';
 const DEFAULT_END        = '2022-12-31';
 const DEFAULT_LIMIT      = 20;
@@ -17,6 +23,7 @@ function formatCurrency(value) {
 }
 
 export default function CustomersView() {
+  useEffect(() => { document.title = 'Customers — NovaCart'; }, []);
   const [startDate,  setStartDate]  = useState(() => readStoredDate('dashboardDates_start', DEFAULT_START));
   const [endDate,    setEndDate]    = useState(() => readStoredDate('dashboardDates_end',   DEFAULT_END));
   const [customers,  setCustomers]  = useState([]);
@@ -97,40 +104,58 @@ export default function CustomersView() {
   });
 
   const sortIcon = (col) => sortBy === col ? (sortDir === 'asc' ? ' ↑' : ' ↓') : '';
+  const ariaSortValue = (col) => {
+    if (sortBy !== col) return undefined;
+    return sortDir === 'asc' ? 'ascending' : 'descending';
+  };
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg-primary)', marginLeft: 'var(--sidebar-width)', transition: 'margin-left 0.22s ease', overflowX: 'hidden' }}>
       <Navbar />
       <TopControls />
-      <div className="page">
+      <main className="page" id="main-content" aria-labelledby="page-heading">
+        <h1 id="page-heading" style={srOnly}>Customers</h1>
 
-        <div className="filter-bar">
+        <div className="filter-bar" role="search" aria-label="Date range filter">
           <div className="filter-bar-dates">
             <div className="filter-bar-field">
-              <label>From</label>
-              <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} />
+              <label htmlFor="customers-start-date">From</label>
+              <input id="customers-start-date" type="date" value={startDate} onChange={e => setStartDate(e.target.value)} />
             </div>
             <div className="filter-bar-field">
-              <label>To</label>
-              <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} />
+              <label htmlFor="customers-end-date">To</label>
+              <input id="customers-end-date" type="date" value={endDate} onChange={e => setEndDate(e.target.value)} />
             </div>
           </div>
           <div className="filter-bar-actions">
             <button className="btn-apply" onClick={handleApply}>Apply</button>
-            <button className="btn-reset" onClick={handleReset} title="Reset dates" aria-label="Reset dates"><RotateCcw size={14} strokeWidth={2.5} /></button>
+            <button className="btn-reset" onClick={handleReset} aria-label="Reset dates to default"><RotateCcw size={14} strokeWidth={2.5} aria-hidden="true" /></button>
+            <button
+              className="btn-card-export"
+              disabled={loading}
+              aria-label="Export all customers data to Excel"
+              onClick={() => exportToExcel(`customers_all_${startDate}_${endDate}`, [{
+                sheetName: 'Customers',
+                headers: ['Name', 'City', 'State', 'Orders', 'Total Spent ($)'],
+                rows: sorted.map(c => [c.name, c.city, c.state, c.total_orders, Number(c.total_spent)]),
+                colWidths: [{ wch: 24 }, { wch: 18 }, { wch: 8 }, { wch: 10 }, { wch: 16 }],
+              }])}
+            >
+              <Download size={13} strokeWidth={2} aria-hidden="true" />Export All
+            </button>
           </div>
           <span className="filter-bar-hint" style={{ marginLeft: 'auto' }}>{customers.length} customers</span>
         </div>
 
         {error && (
-          <div className="error-box">
+          <div className="error-box" role="alert">
             {error}
-            <button onClick={() => setError(null)} style={{ marginLeft: 12, background: 'none', border: 'none', cursor: 'pointer', fontWeight: 300, color: '#C62828' }}>✕</button>
+            <button onClick={() => setError(null)} aria-label="Dismiss error" style={{ marginLeft: 12, background: 'none', border: 'none', cursor: 'pointer', fontWeight: 300, color: '#C62828' }}>✕</button>
           </div>
         )}
 
         {loading && (
-          <div className="skeleton-card">
+          <div className="skeleton-card" aria-busy="true" aria-label="Loading customers data">
             <div className="skeleton-card-header">
               <div className="skeleton sk-title" />
               <div className="skeleton sk-btn" />
@@ -160,6 +185,7 @@ export default function CustomersView() {
                 <button
                   className="btn-card-export"
                   disabled={customers.length === 0}
+                  aria-label="Export customers to Excel"
                   onClick={() => exportToExcel(`customers_${startDate}_${endDate}`, [{
                     sheetName: 'Customers',
                     headers: ['Name', 'City', 'State', 'Orders', 'Total Spent ($)'],
@@ -167,23 +193,24 @@ export default function CustomersView() {
                     colWidths: [{ wch: 24 }, { wch: 18 }, { wch: 8 }, { wch: 10 }, { wch: 16 }],
                   }])}
                 >
-                  <Download size={13} strokeWidth={2} />Export
+                  <Download size={13} strokeWidth={2} aria-hidden="true" />Export
                 </button>
               </div>
             </div>
 
             {/* Per-card controls */}
             <div className="card-controls">
-              <label>Show</label>
+              <label htmlFor="customers-limit">Show</label>
               <input
+                id="customers-limit"
                 type="number" min="1" max="100"
                 value={limitDraft}
                 onChange={e => setLimitDraft(e.target.value)}
                 onBlur={commitLimit}
                 onKeyDown={e => e.key === 'Enter' && commitLimit()}
               />
-              <label>Sort by spend</label>
-              <select value={sortOrder} onChange={e => { setSortOrder(e.target.value); applyCardControls(parseLim(limitDraft), e.target.value); }}>
+              <label htmlFor="customers-sort">Sort by spend</label>
+              <select id="customers-sort" value={sortOrder} onChange={e => { setSortOrder(e.target.value); applyCardControls(parseLim(limitDraft), e.target.value); }}>
                 <option value="desc">Top spenders first</option>
                 <option value="asc">Lowest spenders first</option>
               </select>
@@ -196,11 +223,11 @@ export default function CustomersView() {
               <table className="data-table">
                 <thead>
                   <tr>
-                    <th className="sortable" onClick={() => handleSort('name')}>Name{sortIcon('name')}</th>
-                    <th className="sortable" onClick={() => handleSort('city')}>City{sortIcon('city')}</th>
-                    <th className="sortable" onClick={() => handleSort('state')}>State{sortIcon('state')}</th>
-                    <th className="sortable right" onClick={() => handleSort('total_orders')}>Orders{sortIcon('total_orders')}</th>
-                    <th className="sortable right" onClick={() => handleSort('total_spent')}>Total Spent{sortIcon('total_spent')}</th>
+                    <th className="sortable" scope="col" tabIndex={0} onClick={() => handleSort('name')} onKeyDown={e => (e.key === 'Enter' || e.key === ' ') && handleSort('name')} aria-sort={ariaSortValue('name')}>Name{sortIcon('name')}</th>
+                    <th className="sortable" scope="col" tabIndex={0} onClick={() => handleSort('city')} onKeyDown={e => (e.key === 'Enter' || e.key === ' ') && handleSort('city')} aria-sort={ariaSortValue('city')}>City{sortIcon('city')}</th>
+                    <th className="sortable" scope="col" tabIndex={0} onClick={() => handleSort('state')} onKeyDown={e => (e.key === 'Enter' || e.key === ' ') && handleSort('state')} aria-sort={ariaSortValue('state')}>State{sortIcon('state')}</th>
+                    <th className="sortable right" scope="col" tabIndex={0} onClick={() => handleSort('total_orders')} onKeyDown={e => (e.key === 'Enter' || e.key === ' ') && handleSort('total_orders')} aria-sort={ariaSortValue('total_orders')}>Orders{sortIcon('total_orders')}</th>
+                    <th className="sortable right" scope="col" tabIndex={0} onClick={() => handleSort('total_spent')} onKeyDown={e => (e.key === 'Enter' || e.key === ' ') && handleSort('total_spent')} aria-sort={ariaSortValue('total_spent')}>Total Spent{sortIcon('total_spent')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -221,7 +248,7 @@ export default function CustomersView() {
           </div>
         )}
         <Disclaimer />
-      </div>
+      </main>
     </div>
   );
 }

@@ -8,6 +8,12 @@ import { getProducts, readStoredDate } from '../utils/api';
 import Disclaimer from '../components/Disclaimer';
 import { useTheme } from '../utils/ThemeContext';
 
+const srOnly = {
+  position: 'absolute', width: 1, height: 1,
+  padding: 0, margin: -1, overflow: 'hidden',
+  clip: 'rect(0,0,0,0)', whiteSpace: 'nowrap', border: 0,
+};
+
 const DEFAULT_START      = '2022-01-01';
 const DEFAULT_END        = '2022-12-31';
 const DEFAULT_LIMIT      = 10;
@@ -21,6 +27,7 @@ function formatCurrency(value) {
 }
 
 export default function ProductsView() {
+  useEffect(() => { document.title = 'Products — NovaCart'; }, []);
   const { dark } = useTheme();
   const tooltipStyle = dark
     ? { backgroundColor: '#1A1A24', border: '1px solid #2E3D52', color: '#EDE9FE' }
@@ -117,34 +124,56 @@ export default function ProductsView() {
     <div style={{ minHeight: '100vh', background: 'var(--bg-primary)', marginLeft: 'var(--sidebar-width)', transition: 'margin-left 0.22s ease', overflowX: 'hidden' }}>
       <Navbar />
       <TopControls />
-      <div className="page">
+      <main className="page" id="main-content" aria-labelledby="page-heading">
+        <h1 id="page-heading" style={srOnly}>Products</h1>
 
-        <div className="filter-bar">
+        <div className="filter-bar" role="search" aria-label="Date range filter">
           <div className="filter-bar-dates">
             <div className="filter-bar-field">
-              <label>From</label>
-              <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} />
+              <label htmlFor="products-start-date">From</label>
+              <input id="products-start-date" type="date" value={startDate} onChange={e => setStartDate(e.target.value)} />
             </div>
             <div className="filter-bar-field">
-              <label>To</label>
-              <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} />
+              <label htmlFor="products-end-date">To</label>
+              <input id="products-end-date" type="date" value={endDate} onChange={e => setEndDate(e.target.value)} />
             </div>
           </div>
           <div className="filter-bar-actions">
             <button className="btn-apply" onClick={handleApply}>Apply</button>
-            <button className="btn-reset" onClick={handleReset} title="Reset dates" aria-label="Reset dates"><RotateCcw size={14} strokeWidth={2.5} /></button>
+            <button className="btn-reset" onClick={handleReset} aria-label="Reset dates to default"><RotateCcw size={14} strokeWidth={2.5} aria-hidden="true" /></button>
+            <button
+              className="btn-card-export"
+              disabled={loading}
+              aria-label="Export all products data to Excel"
+              onClick={() => exportToExcel(`products_all_${startDate}_${endDate}`, [
+                {
+                  sheetName: 'Products by Revenue',
+                  headers: ['Name', 'Category', 'Units Sold', 'Revenue ($)'],
+                  rows: chartProducts.map(p => [p.product_name, p.category, p.units_sold, p.revenue]),
+                  colWidths: [{ wch: 30 }, { wch: 20 }, { wch: 14 }, { wch: 16 }],
+                },
+                {
+                  sheetName: 'Product Details',
+                  headers: ['Name', 'Category', 'Units Sold', 'Revenue ($)'],
+                  rows: detailsProducts.map(p => [p.product_name, p.category, p.units_sold, p.revenue]),
+                  colWidths: [{ wch: 30 }, { wch: 20 }, { wch: 14 }, { wch: 16 }],
+                },
+              ])}
+            >
+              <Download size={13} strokeWidth={2} aria-hidden="true" />Export All
+            </button>
           </div>
         </div>
 
         {error && (
-          <div className="error-box">
+          <div className="error-box" role="alert">
             {error}
-            <button onClick={() => setError(null)} style={{ marginLeft: 12, background: 'none', border: 'none', cursor: 'pointer', fontWeight: 300, color: '#C62828' }}>✕</button>
+            <button onClick={() => setError(null)} aria-label="Dismiss error" style={{ marginLeft: 12, background: 'none', border: 'none', cursor: 'pointer', fontWeight: 300, color: '#C62828' }}>✕</button>
           </div>
         )}
 
         {loading && (
-          <div className="skeleton-grid-2">
+          <div className="skeleton-grid-2" aria-busy="true" aria-label="Loading products data">
             {/* Products by Revenue card skeleton */}
             <div className="skeleton-card">
               <div className="skeleton-card-header">
@@ -182,12 +211,15 @@ export default function ProductsView() {
                   <button
                     className={`btn-toggle-view${chartTableView ? ' active' : ''}`}
                     onClick={() => setChartTableView(v => !v)}
+                    aria-pressed={chartTableView}
+                    aria-label={chartTableView ? 'Switch to chart view' : 'Switch to table view (accessible)'}
                   >
-                    {chartTableView ? <><BarChart2 size={13} strokeWidth={2} />Chart</> : <><Table2 size={13} strokeWidth={2} />Table</>}
+                    {chartTableView ? <><BarChart2 size={13} strokeWidth={2} aria-hidden="true" />Chart</> : <><Table2 size={13} strokeWidth={2} aria-hidden="true" />Table</>}
                   </button>
                   <button
                     className="btn-card-export"
                     disabled={chartProducts.length === 0}
+                    aria-label="Export products by revenue to Excel"
                     onClick={() => exportToExcel(`products_chart_${startDate}_${endDate}`, [{
                       sheetName: 'Products by Revenue',
                       headers: ['Name', 'Category', 'Units Sold', 'Revenue ($)'],
@@ -195,23 +227,24 @@ export default function ProductsView() {
                       colWidths: [{ wch: 30 }, { wch: 20 }, { wch: 14 }, { wch: 16 }],
                     }])}
                   >
-                    <Download size={13} strokeWidth={2} />Export
+                    <Download size={13} strokeWidth={2} aria-hidden="true" />Export
                   </button>
                 </div>
               </div>
 
               {/* Per-card controls */}
               <div className="card-controls">
-                <label>Show</label>
+                <label htmlFor="chart-limit">Show</label>
                 <input
+                  id="chart-limit"
                   type="number" min="1" max="100"
                   value={chartLimitDraft}
                   onChange={e => setChartLimitDraft(e.target.value)}
                   onBlur={commitChartLimit}
                   onKeyDown={e => e.key === 'Enter' && commitChartLimit()}
                 />
-                <label>Sort</label>
-                <select value={chartSortOrder} onChange={e => { setChartSortOrder(e.target.value); applyChartControls(parseLim(chartLimitDraft), e.target.value); }}>
+                <label htmlFor="chart-sort">Sort</label>
+                <select id="chart-sort" value={chartSortOrder} onChange={e => { setChartSortOrder(e.target.value); applyChartControls(parseLim(chartLimitDraft), e.target.value); }}>
                   <option value="desc">Top (highest revenue)</option>
                   <option value="asc">Bottom (lowest revenue)</option>
                 </select>
@@ -243,6 +276,7 @@ export default function ProductsView() {
                   </table>
                 </div>
               ) : (
+                <div role="img" aria-label="Products by revenue bar chart">
                 <ResponsiveContainer width="100%" height={Math.max(200, chartProducts.length * 36)}>
                   <BarChart data={chartProducts} layout="vertical" margin={{ top: 4, right: 16, bottom: 4, left: 0 }}>
                     <XAxis type="number" tickFormatter={v => `$${(v/1000).toFixed(0)}K`} tick={{ fontSize: 11, fill: 'var(--text-muted)' }} />
@@ -252,6 +286,7 @@ export default function ProductsView() {
                     <Bar dataKey="revenue" fill="var(--accent)" radius={[0, 4, 4, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
+                </div>
               )}
             </div>
 
@@ -263,6 +298,7 @@ export default function ProductsView() {
                   <button
                     className="btn-card-export"
                     disabled={detailsProducts.length === 0}
+                    aria-label="Export product details to Excel"
                     onClick={() => exportToExcel(`products_details_${startDate}_${endDate}`, [{
                       sheetName: 'Product Details',
                       headers: ['Name', 'Category', 'Units Sold', 'Revenue ($)'],
@@ -270,23 +306,24 @@ export default function ProductsView() {
                       colWidths: [{ wch: 30 }, { wch: 20 }, { wch: 14 }, { wch: 16 }],
                     }])}
                   >
-                    <Download size={13} strokeWidth={2} />Export
+                    <Download size={13} strokeWidth={2} aria-hidden="true" />Export
                   </button>
                 </div>
               </div>
 
               {/* Per-card controls */}
               <div className="card-controls">
-                <label>Show</label>
+                <label htmlFor="details-limit">Show</label>
                 <input
+                  id="details-limit"
                   type="number" min="1" max="100"
                   value={detailsLimitDraft}
                   onChange={e => setDetailsLimitDraft(e.target.value)}
                   onBlur={commitDetailsLimit}
                   onKeyDown={e => e.key === 'Enter' && commitDetailsLimit()}
                 />
-                <label>Sort</label>
-                <select value={detailsSortOrder} onChange={e => { setDetailsSortOrder(e.target.value); applyDetailsControls(parseLim(detailsLimitDraft), e.target.value); }}>
+                <label htmlFor="details-sort">Sort</label>
+                <select id="details-sort" value={detailsSortOrder} onChange={e => { setDetailsSortOrder(e.target.value); applyDetailsControls(parseLim(detailsLimitDraft), e.target.value); }}>
                   <option value="desc">Top (highest revenue)</option>
                   <option value="asc">Bottom (lowest revenue)</option>
                 </select>
@@ -323,7 +360,7 @@ export default function ProductsView() {
           </div>
         )}
         <Disclaimer />
-      </div>
+      </main>
     </div>
   );
 }

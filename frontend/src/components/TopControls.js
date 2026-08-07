@@ -31,7 +31,7 @@ export default function TopControls() {
       <div style={{ width: 1, height: 18, background: borderColor }} />
       <button
         onClick={toggle}
-        title={dark ? 'Switch to light mode' : 'Switch to dark mode'}
+        aria-label={dark ? 'Switch to light mode' : 'Switch to dark mode'}
         style={{
           display: 'flex',
           alignItems: 'center',
@@ -48,7 +48,7 @@ export default function TopControls() {
         onMouseEnter={e => { e.currentTarget.style.background = btnHoverBg; }}
         onMouseLeave={e => { e.currentTarget.style.background = btnBg; }}
       >
-        {dark ? <Sun size={15} strokeWidth={2.2} /> : <Moon size={15} strokeWidth={2.2} />}
+        {dark ? <Sun size={15} strokeWidth={2.2} aria-hidden="true" /> : <Moon size={15} strokeWidth={2.2} aria-hidden="true" />}
       </button>
     </div>
   );

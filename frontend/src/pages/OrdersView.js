@@ -8,6 +8,13 @@ import { getSummary, getOrders, getCities, readStoredDate } from '../utils/api';
 import Disclaimer from '../components/Disclaimer';
 import { useTheme } from '../utils/ThemeContext';
 
+// Visually hidden but available to screen readers
+const srOnly = {
+  position: 'absolute', width: 1, height: 1,
+  padding: 0, margin: -1, overflow: 'hidden',
+  clip: 'rect(0,0,0,0)', whiteSpace: 'nowrap', border: 0,
+};
+
 const DEFAULT_START = '2022-01-01';
 const DEFAULT_END   = '2022-12-31';
 
@@ -19,6 +26,7 @@ function formatCurrency(value) {
 }
 
 export default function OrdersView() {
+  useEffect(() => { document.title = 'Orders — NovaCart'; }, []);
   const { dark } = useTheme();
   const tooltipStyle = dark
     ? { backgroundColor: '#1A1A24', border: '1px solid #2E3D52', color: '#EDE9FE' }
@@ -141,36 +149,58 @@ export default function OrdersView() {
     <div style={{ minHeight: '100vh', background: 'var(--bg-primary)', marginLeft: 'var(--sidebar-width)', transition: 'margin-left 0.22s ease', overflowX: 'hidden' }}>
       <Navbar />
       <TopControls />
-      <div className="page">
+      <main className="page" id="main-content" aria-labelledby="page-heading">
+        <h1 id="page-heading" style={srOnly}>Orders</h1>
 
-        <div className="filter-bar">
+        <div className="filter-bar" role="search" aria-label="Date range filter">
           <div className="filter-bar-dates">
             <div className="filter-bar-field">
-              <label>From</label>
-              <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} />
+              <label htmlFor="orders-start-date">From</label>
+              <input id="orders-start-date" type="date" value={startDate} onChange={e => setStartDate(e.target.value)} />
             </div>
             <div className="filter-bar-field">
-              <label>To</label>
-              <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} />
+              <label htmlFor="orders-end-date">To</label>
+              <input id="orders-end-date" type="date" value={endDate} onChange={e => setEndDate(e.target.value)} />
             </div>
           </div>
           <div className="filter-bar-actions">
             <button className="btn-apply" onClick={handleApply}>Apply</button>
-            <button className="btn-reset" onClick={handleReset} title="Reset dates" aria-label="Reset dates"><RotateCcw size={14} strokeWidth={2.5} /></button>
+            <button className="btn-reset" onClick={handleReset} aria-label="Reset dates to default"><RotateCcw size={14} strokeWidth={2.5} aria-hidden="true" /></button>
+            <button
+              className="btn-card-export"
+              disabled={mainLoading || citiesLoading}
+              aria-label="Export all orders data to Excel"
+              onClick={() => exportToExcel(`orders_all_${startDate}_${endDate}`, [
+                {
+                  sheetName: 'Monthly Revenue',
+                  headers: ['Month', 'Order Count', 'Revenue ($)'],
+                  rows: orders.map(o => [o.month_name, o.order_count, o.revenue]),
+                  colWidths: [{ wch: 14 }, { wch: 14 }, { wch: 16 }],
+                },
+                {
+                  sheetName: 'Revenue by City',
+                  headers: ['City', 'State', 'Order Count', 'Revenue ($)'],
+                  rows: cities.map(c => [c.city, c.state, c.order_count, c.revenue]),
+                  colWidths: [{ wch: 20 }, { wch: 8 }, { wch: 14 }, { wch: 16 }],
+                },
+              ])}
+            >
+              <Download size={13} strokeWidth={2} aria-hidden="true" />Export All
+            </button>
           </div>
           <span className="filter-bar-hint">Date range limit: 3 years</span>
         </div>
 
         {mainError && (
-          <div className="error-box">
+          <div className="error-box" role="alert">
             {mainError}
-            <button onClick={() => setMainError(null)} style={{ marginLeft: 12, background: 'none', border: 'none', cursor: 'pointer', fontWeight: 300, color: '#C62828' }}>✕</button>
+            <button onClick={() => setMainError(null)} aria-label="Dismiss error" style={{ marginLeft: 12, background: 'none', border: 'none', cursor: 'pointer', fontWeight: 300, color: '#C62828' }}>✕</button>
           </div>
         )}
 
         {/* ── Stat cards + Monthly Revenue — show skeleton while loading ── */}
         {mainLoading ? (
-          <>
+          <div aria-busy="true" aria-label="Loading orders data">
             {/* Stat box skeletons */}
             <div className="skeleton-stat-row">
               {[1,2,3].map(i => (
@@ -188,20 +218,20 @@ export default function OrdersView() {
               </div>
               <div className="skeleton sk-chart" />
             </div>
-          </>
+          </div>
         ) : !mainError && (
           <>
             <div className="stat-row">
               <div className="stat-box">
-                <div className="label">Total Revenue</div>
+                <div className="label" aria-label="Total Revenue">Total Revenue</div>
                 <div className="value">{summary?.total_revenue?.toLocaleString('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 })}</div>
               </div>
               <div className="stat-box">
-                <div className="label">Total Orders</div>
+                <div className="label" aria-label="Total Orders">Total Orders</div>
                 <div className="value">{summary?.total_orders?.toLocaleString()}</div>
               </div>
               <div className="stat-box">
-                <div className="label">Unique Customers</div>
+                <div className="label" aria-label="Unique Customers">Unique Customers</div>
                 <div className="value">{summary?.unique_customers?.toLocaleString()}</div>
               </div>
             </div>
@@ -213,12 +243,15 @@ export default function OrdersView() {
                   <button
                     className={`btn-toggle-view${ordersTableView ? ' active' : ''}`}
                     onClick={() => setOrdersTableView(v => !v)}
+                    aria-pressed={ordersTableView}
+                    aria-label={ordersTableView ? 'Switch to chart view' : 'Switch to table view (accessible)'}
                   >
-                    {ordersTableView ? <><BarChart2 size={13} strokeWidth={2} />Chart</> : <><Table2 size={13} strokeWidth={2} />Table</>}
+                    {ordersTableView ? <><BarChart2 size={13} strokeWidth={2} aria-hidden="true" />Chart</> : <><Table2 size={13} strokeWidth={2} aria-hidden="true" />Table</>}
                   </button>
                   <button
                     className="btn-card-export"
                     disabled={orders.length === 0}
+                    aria-label="Export monthly revenue to Excel"
                     onClick={() => exportToExcel(`monthly_revenue_${startDate}_${endDate}`, [{
                       sheetName: 'Monthly Revenue',
                       headers: ['Month', 'Order Count', 'Revenue ($)'],
@@ -226,7 +259,7 @@ export default function OrdersView() {
                       colWidths: [{ wch: 14 }, { wch: 14 }, { wch: 16 }],
                     }])}
                   >
-                    <Download size={13} strokeWidth={2} />Export
+                    <Download size={13} strokeWidth={2} aria-hidden="true" />Export
                   </button>
                 </div>
               </div>
@@ -255,6 +288,7 @@ export default function OrdersView() {
                   </table>
                 </div>
               ) : (
+                <div role="img" aria-label="Monthly revenue line chart">
                 <ResponsiveContainer width="100%" height={270}>
                   <LineChart data={orders} margin={{ top: 4, right: 16, bottom: 4, left: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
@@ -269,6 +303,7 @@ export default function OrdersView() {
                     <Line type="linear" dataKey="revenue" stroke="var(--accent)" strokeWidth={2} dot={{ r: 4, fill: 'var(--accent)' }} activeDot={{ r: 6 }} />
                   </LineChart>
                 </ResponsiveContainer>
+                </div>
               )}
             </div>
           </>
@@ -284,12 +319,15 @@ export default function OrdersView() {
               <button
                 className={`btn-toggle-view${citiesTableView ? ' active' : ''}`}
                 onClick={() => setCitiesTableView(v => !v)}
+                aria-pressed={citiesTableView}
+                aria-label={citiesTableView ? 'Switch to chart view' : 'Switch to table view (accessible)'}
               >
-                {citiesTableView ? <><BarChart2 size={13} strokeWidth={2} />Chart</> : <><Table2 size={13} strokeWidth={2} />Table</>}
+                {citiesTableView ? <><BarChart2 size={13} strokeWidth={2} aria-hidden="true" />Chart</> : <><Table2 size={13} strokeWidth={2} aria-hidden="true" />Table</>}
               </button>
               <button
                 className="btn-card-export"
                 disabled={citiesLoading || cities.length === 0}
+                aria-label="Export revenue by city to Excel"
                 onClick={() => exportToExcel(`revenue_by_city_${startDate}_${endDate}`, [{
                   sheetName: 'Revenue by City',
                   headers: ['City', 'State', 'Order Count', 'Revenue ($)'],
@@ -297,22 +335,24 @@ export default function OrdersView() {
                   colWidths: [{ wch: 20 }, { wch: 8 }, { wch: 14 }, { wch: 16 }],
                 }])}
               >
-                <Download size={13} strokeWidth={2} />Export
+                <Download size={13} strokeWidth={2} aria-hidden="true" />Export
               </button>
             </div>
           </div>
 
           <div className="card-controls">
-            <label>Show</label>
+            <label htmlFor="cities-limit">Show</label>
             <input
+              id="cities-limit"
               type="number" min="1" max="100"
               value={citiesLimitDraft}
               onChange={e => setCitiesLimitDraft(e.target.value)}
               onBlur={commitCitiesLimit}
               onKeyDown={e => e.key === 'Enter' && commitCitiesLimit()}
             />
-            <label>Sort</label>
+            <label htmlFor="cities-sort">Sort</label>
             <select
+              id="cities-sort"
               value={citiesSortOrder}
               onChange={e => {
                 const sort = e.target.value;
@@ -327,9 +367,9 @@ export default function OrdersView() {
           </div>
 
           {citiesError ? (
-            <div className="error-box" style={{ marginBottom: 0 }}>
+            <div className="error-box" role="alert" style={{ marginBottom: 0 }}>
               {citiesError}
-              <button onClick={() => setCitiesError(null)} style={{ marginLeft: 12, background: 'none', border: 'none', cursor: 'pointer', fontWeight: 300, color: '#C62828' }}>✕</button>
+              <button onClick={() => setCitiesError(null)} aria-label="Dismiss error" style={{ marginLeft: 12, background: 'none', border: 'none', cursor: 'pointer', fontWeight: 300, color: '#C62828' }}>✕</button>
             </div>
           ) : cities.length === 0 ? (
             <div className="loading">No data available</div>
@@ -357,6 +397,7 @@ export default function OrdersView() {
               </table>
             </div>
           ) : (
+            <div role="img" aria-label="Revenue by city bar chart">
             <ResponsiveContainer width="100%" height={Math.max(200, cities.length * 36)}>
               <BarChart data={cities} layout="vertical" margin={{ top: 4, right: 16, bottom: 4, left: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
@@ -366,11 +407,12 @@ export default function OrdersView() {
                 <Bar dataKey="revenue" fill="var(--blue)" radius={[0, 4, 4, 0]} />
               </BarChart>
             </ResponsiveContainer>
+            </div>
           )}
         </div>
 
         <Disclaimer />
-      </div>
+      </main>
     </div>
   );
 }

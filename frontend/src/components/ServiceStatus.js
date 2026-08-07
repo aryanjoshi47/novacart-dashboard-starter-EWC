@@ -26,14 +26,23 @@ export default function ServiceStatus() {
   const labels = { healthy: 'Service healthy', degraded: 'Degraded', error: 'Offline', checking: 'Checking…' };
 
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12 }} title={detail}>
-      <span style={{
-        width: 8, height: 8, borderRadius: '50%',
-        backgroundColor: colors[status],
-        boxShadow: 'none',
-        display: 'inline-block',
-      }} />
-      <span style={{ color: colors[status], fontWeight: 300 }}>{labels[status]}</span>
+    <div
+      role="status"
+      aria-live="polite"
+      aria-label={`Service status: ${labels[status]}${detail ? ` — ${detail}` : ''}`}
+      style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12 }}
+      title={detail}
+    >
+      <span
+        aria-hidden="true"
+        style={{
+          width: 8, height: 8, borderRadius: '50%',
+          backgroundColor: colors[status],
+          boxShadow: 'none',
+          display: 'inline-block',
+        }}
+      />
+      <span aria-hidden="true" style={{ color: colors[status], fontWeight: 300 }}>{labels[status]}</span>
     </div>
   );
 }
