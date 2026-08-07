@@ -120,18 +120,23 @@ def authorize(request: Request):
     username in the Sf-Context-Current-User header. This endpoint reads that
     header and returns the user's identity and role so the frontend can store it.
 
+    Also returns the Snowflake logout URL so the frontend can navigate directly
+    to it without needing a backend redirect hop.
+
     Role is "admin" if the username is in ADMIN_USERS, otherwise "viewer".
     In Dev mode: returns a mock user with role determined by DEMO_ROLE env var.
     """
     if CLIENT_VALIDATION == "Dev":
-        return {"user": None, "status": "authorized", "role": DEMO_ROLE}
+        return {"user": None, "status": "authorized", "role": DEMO_ROLE, "logout_url": None}
 
-    username = request.headers.get("sf-context-current-user")
+    username   = request.headers.get("sf-context-current-user")
+    logout_url = request.headers.get("sf-context-logout-url")
+
     if not username:
         raise HTTPException(status_code=422, detail="Missing Sf-Context-Current-User header")
 
     role = "admin" if username.upper() in ADMIN_USERS else "viewer"
-    return {"user": username, "status": "authorized", "role": role}
+    return {"user": username, "status": "authorized", "role": role, "logout_url": logout_url}
 
 
 @app.get("/logout", tags=["Auth"])

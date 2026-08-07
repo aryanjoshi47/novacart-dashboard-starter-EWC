@@ -24,18 +24,34 @@ export default function Navbar() {
   // Show admin-only links only when role is confirmed admin; during loading show non-admin links
   const links = ALL_LINKS.filter(l => !l.adminOnly || role === 'admin');
 
+  // Keyboard handler for clickable non-button elements
+  function handleKeyActivate(fn) {
+    return (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fn(); } };
+  }
+
   const [collapsed,    setCollapsed]   = useState(() => localStorage.getItem('sidebarCollapsed') === 'true');
   const [isMobile,     setIsMobile]    = useState(() => window.innerWidth <= MOBILE_BP);
   const [menuOpen,     setMenuOpen]    = useState(false);
   const [healthColor,  setHealthColor] = useState('#90A4AE'); // checking = muted grey
 
-  const navBg           = dark ? '#0D0D10' : '#ffffff';
-  const borderColor     = dark ? '#1A1A24' : '#E0E6ED';
-  const logoColor       = dark ? '#EDE9FE' : '#1A2332';
-  const inactiveColor   = dark ? '#6B6080' : '#6B7280';
-  const hoverColor      = dark ? '#EDE9FE' : '#1A2332';
-  const iconBorderColor = dark ? '#1A1A24' : '#E5E7EB';
-  const btnBg           = dark ? '#5E6AD2' : '#00897B';
+  const navBg           = dark ? '#EDE9FE' : '#1A2332';
+  const borderColor     = dark ? '#C5BFDF' : '#2E3D52';
+  const logoColor       = dark ? '#1A2332' : '#EDE9FE';
+  const inactiveColor   = dark ? '#2E3D52' : '#C5C9D4';
+  const hoverColor      = dark ? '#1A2332' : '#ffffff';
+  const iconBorderColor = dark ? '#C5BFDF' : '#2E3D52';
+  const btnBg           = dark ? '#00897B' : '#5E6AD2';
+  const logoSrc         = dark ? '/novacart_logo.png' : '/novacart_logo_white.png';
+
+  // Close mobile menu on Escape key
+  useEffect(() => {
+    if (!isMobile) return;
+    function onKeyDown(e) {
+      if (e.key === 'Escape' && menuOpen) setMenuOpen(false);
+    }
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, [isMobile, menuOpen]);
 
   // Track viewport width changes
   useEffect(() => {
@@ -107,19 +123,24 @@ export default function Navbar() {
         }}>
           {/* Logo */}
           <div
+            role="link"
+            tabIndex={0}
             onClick={() => navigate('/')}
+            onKeyDown={handleKeyActivate(() => navigate('/'))}
+            aria-label="NovaCart home"
             style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', userSelect: 'none' }}
           >
-            <img src="/novacart_logo.png" alt="NovaCart" style={{ width: 28, height: 28, objectFit: 'contain' }} />
-            <span style={{ color: logoColor, fontWeight: 600, fontSize: 16, letterSpacing: '-0.3px' }}>
+            <img src={logoSrc} alt="" aria-hidden="true" style={{ width: 28, height: 28, objectFit: 'contain' }} />
+            <span style={{ color: logoColor, fontWeight: 300, fontSize: 16, letterSpacing: '-0.3px', fontFamily: 'Poppins, sans-serif' }}>
               NovaCart
             </span>
           </div>
 
           {/* Right controls: health dot + theme toggle + hamburger */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            {/* Health status dot */}
+            {/* Health status dot — colour-only indicator, title provides text for pointer users */}
             <span
+              aria-hidden="true"
               title="Service status"
               style={{
                 width: 8, height: 8, borderRadius: '50%',
@@ -132,7 +153,7 @@ export default function Navbar() {
             {/* Theme toggle */}
             <button
               onClick={toggle}
-              title={dark ? 'Switch to light mode' : 'Switch to dark mode'}
+              aria-label={dark ? 'Switch to light mode' : 'Switch to dark mode'}
               style={{
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 width: 32, height: 32,
@@ -141,13 +162,15 @@ export default function Navbar() {
                 color: '#fff', cursor: 'pointer',
               }}
             >
-              {dark ? <Sun size={14} strokeWidth={2.2} /> : <Moon size={14} strokeWidth={2.2} />}
+              {dark ? <Sun size={14} strokeWidth={2.2} aria-hidden="true" /> : <Moon size={14} strokeWidth={2.2} aria-hidden="true" />}
             </button>
             <div style={{ width: 1, height: 16, background: borderColor }} />
             {/* Hamburger / close */}
             <button
               onClick={() => setMenuOpen(o => !o)}
               aria-label={menuOpen ? 'Close menu' : 'Open menu'}
+              aria-expanded={menuOpen}
+              aria-controls="mobile-nav-menu"
               style={{
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 width: 36, height: 36,
@@ -157,7 +180,7 @@ export default function Navbar() {
                 color: inactiveColor, cursor: 'pointer',
               }}
             >
-              {menuOpen ? <X size={18} strokeWidth={2} /> : <Menu size={18} strokeWidth={2} />}
+              {menuOpen ? <X size={18} strokeWidth={2} aria-hidden="true" /> : <Menu size={18} strokeWidth={2} aria-hidden="true" />}
             </button>
           </div>
         </div>
@@ -174,22 +197,27 @@ export default function Navbar() {
                 background: 'transparent',
               }}
             />
-            <div style={{
-              position: 'fixed',
-              top: 'var(--topbar-height)',
-              left: 0, right: 0,
-              background: navBg,
-              borderBottom: `1px solid ${borderColor}`,
-              boxShadow: dark ? '0 8px 24px rgba(0,0,0,0.4)' : '0 8px 16px rgba(0,0,0,0.08)',
-              zIndex: 199,
-              padding: '8px 12px 12px',
-            }}>
+            <div
+              id="mobile-nav-menu"
+              role="navigation"
+              aria-label="Main navigation"
+              style={{
+                position: 'fixed',
+                top: 'var(--topbar-height)',
+                left: 0, right: 0,
+                background: navBg,
+                borderBottom: `1px solid ${borderColor}`,
+                boxShadow: dark ? '0 8px 24px rgba(0,0,0,0.4)' : '0 8px 16px rgba(0,0,0,0.08)',
+                zIndex: 199,
+                padding: '8px 12px 12px',
+              }}>
               {links.map(({ label, path, Icon }) => {
                 const active = location.pathname === path;
                 return (
                   <button
                     key={path}
                     onClick={() => navigate(path)}
+                    aria-current={active ? 'page' : undefined}
                     style={{
                       display: 'flex', alignItems: 'center', gap: 12,
                       width: '100%',
@@ -200,19 +228,20 @@ export default function Navbar() {
                       padding: '0 14px',
                       height: 44,
                       cursor: 'pointer',
-                      fontSize: 14, fontWeight: 500,
+                      fontSize: 16, fontWeight: 300, fontFamily: 'Satoshi, sans-serif',
                       marginBottom: 6,
                       boxSizing: 'border-box',
                     }}
                   >
-                    <Icon size={16} strokeWidth={1.8} />
-                    <span>{label}</span>
+                    <Icon size={16} strokeWidth={1.8} aria-hidden="true" />
+                    <span style={{ letterSpacing: '0.3px' }}>{label}</span>
                   </button>
                 );
               })}
               {/* Logout */}
               <button
                 onClick={logout}
+                aria-label={`Logout${user ? ` (${user})` : ''}`}
                 style={{
                   display: 'flex', alignItems: 'center', gap: 12,
                   width: '100%',
@@ -223,13 +252,13 @@ export default function Navbar() {
                   padding: '0 14px',
                   height: 44,
                   cursor: 'pointer',
-                  fontSize: 14, fontWeight: 500,
+                  fontSize: 16, fontWeight: 300, fontFamily: 'Satoshi, sans-serif',
                   marginTop: 2,
                   boxSizing: 'border-box',
                 }}
               >
-                <LogOut size={16} strokeWidth={1.8} />
-                <span>Logout{user ? ` (${user})` : ''}</span>
+                <LogOut size={16} strokeWidth={1.8} aria-hidden="true" />
+                <span aria-hidden="true" style={{ letterSpacing: '0.3px' }}>Logout{user ? ` (${user})` : ''}</span>
               </button>
             </div>
           </>
@@ -238,13 +267,13 @@ export default function Navbar() {
     );
   }
 
-  // ── Desktop sidebar (unchanged) ─────────────────────────────────────────
+  // ── Desktop sidebar ──────────────────────────────────────────────────────
   return (
     <>
     {/* Collapse toggle — floats on the outer edge, vertically centred */}
     <button
       onClick={toggleSidebar}
-      title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+      aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
       style={{
         position: 'fixed',
         top: '50vh',
@@ -266,13 +295,13 @@ export default function Navbar() {
         padding: 0,
         flexShrink: 0,
       }}
-      onMouseEnter={e => { e.currentTarget.style.background = dark ? '#1A1A2E' : '#F3F4F6'; e.currentTarget.style.color = hoverColor; }}
+      onMouseEnter={e => { e.currentTarget.style.background = dark ? '#D6D0EE' : '#253347'; e.currentTarget.style.color = hoverColor; }}
       onMouseLeave={e => { e.currentTarget.style.background = navBg; e.currentTarget.style.color = inactiveColor; }}
     >
-      {collapsed ? <ChevronRight size={18} strokeWidth={2.5} /> : <ChevronLeft size={18} strokeWidth={2.5} />}
+      {collapsed ? <ChevronRight size={18} strokeWidth={2.5} aria-hidden="true" /> : <ChevronLeft size={18} strokeWidth={2.5} aria-hidden="true" />}
     </button>
 
-    <nav style={{
+    <nav aria-label="Main navigation" style={{
       position: 'fixed',
       left: 0, top: 0,
       height: '100vh',
@@ -291,7 +320,11 @@ export default function Navbar() {
 
       {/* Logo */}
       <div
+        role="link"
+        tabIndex={0}
         onClick={() => navigate('/')}
+        onKeyDown={handleKeyActivate(() => navigate('/'))}
+        aria-label="NovaCart home"
         style={{
           display: 'flex', alignItems: 'center', gap: 10,
           cursor: 'pointer', userSelect: 'none',
@@ -301,12 +334,13 @@ export default function Navbar() {
         }}
       >
         <img
-          src="/novacart_logo.png"
-          alt="NovaCart"
+          src={logoSrc}
+          alt=""
+          aria-hidden="true"
           style={{ width: 32, height: 32, objectFit: 'contain', flexShrink: 0 }}
         />
         {!collapsed && (
-          <span style={{ color: logoColor, fontWeight: 500, fontSize: 17, letterSpacing: '-0.3px', whiteSpace: 'nowrap' }}>
+          <span style={{ color: logoColor, fontWeight: 300, fontSize: 17, letterSpacing: '-0.3px', whiteSpace: 'nowrap', fontFamily: 'Poppins, sans-serif' }}>
             NovaCart
           </span>
         )}
@@ -314,8 +348,8 @@ export default function Navbar() {
 
       {/* Nav links */}
       <div style={{
-        display: 'flex', flexDirection: 'column', gap: 6,
-        padding: collapsed ? '8px 0' : '8px 12px',
+        display: 'flex', flexDirection: 'column', gap: 2,
+        padding: '8px 0',
         flex: 1,
       }}>
         {links.map(({ label, path, Icon }) => {
@@ -324,43 +358,44 @@ export default function Navbar() {
             <button
               key={path}
               onClick={() => navigate(path)}
-              title={collapsed ? label : undefined}
+              aria-label={collapsed ? label : undefined}
+              aria-current={active ? 'page' : undefined}
               style={{
                 display: 'flex', alignItems: 'center',
                 gap: collapsed ? 0 : 12,
                 justifyContent: collapsed ? 'center' : 'flex-start',
-                background: active ? 'var(--accent)' : 'transparent',
-                border: active ? 'none' : `1px solid ${active ? 'transparent' : iconBorderColor}`,
-                color: active ? '#fff' : inactiveColor,
-                borderRadius: 8,
-                padding: collapsed ? 0 : '0 14px',
+                background: active ? (dark ? 'rgba(26,35,50,0.12)' : 'rgba(255,255,255,0.10)') : 'transparent',
+                border: 'none',
+                borderLeft: active ? `3px solid var(--accent)` : '3px solid transparent',
+                color: active ? hoverColor : inactiveColor,
+                borderRadius: 0,
+                padding: collapsed ? 0 : '0 18px',
                 cursor: 'pointer',
-                fontSize: 14, fontWeight: 500,
+                fontSize: 16, fontWeight: 300, fontFamily: 'Satoshi, sans-serif',
                 transition: 'background 0.15s, color 0.15s',
                 height: 44,
-                width: collapsed ? 44 : '100%',
-                alignSelf: collapsed ? 'center' : 'stretch',
+                width: '100%',
                 flexShrink: 0,
                 boxSizing: 'border-box',
               }}
-              onMouseEnter={e => { if (!active) { e.currentTarget.style.color = hoverColor; e.currentTarget.style.background = 'rgba(124,58,237,0.08)'; } }}
+              onMouseEnter={e => { if (!active) { e.currentTarget.style.color = hoverColor; e.currentTarget.style.background = dark ? 'rgba(26,35,50,0.08)' : 'rgba(255,255,255,0.06)'; } }}
               onMouseLeave={e => { if (!active) { e.currentTarget.style.color = inactiveColor; e.currentTarget.style.background = 'transparent'; } }}
             >
-              <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <span aria-hidden="true" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                 <Icon size={16} strokeWidth={1.8} />
               </span>
-              {!collapsed && <span style={{ whiteSpace: 'nowrap' }}>{label}</span>}
+              {!collapsed && <span style={{ whiteSpace: 'nowrap', letterSpacing: '0.3px' }}>{label}</span>}
             </button>
           );
         })}
       </div>
 
       {/* Logout — pinned to the bottom of the sidebar */}
-      <div style={{ padding: collapsed ? '12px 0' : '12px 12px', flexShrink: 0 }}>
+      <div style={{ paddingBottom: 8, flexShrink: 0 }}>
         {!collapsed && user && (
           <div style={{
             fontSize: 11, color: inactiveColor,
-            padding: '0 4px 6px',
+            padding: '0 21px 4px',
             whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
           }}>
             {user}
@@ -368,31 +403,31 @@ export default function Navbar() {
         )}
         <button
           onClick={logout}
-          title={collapsed ? 'Logout' : undefined}
+          aria-label={collapsed ? `Logout${user ? ` (${user})` : ''}` : undefined}
           style={{
             display: 'flex', alignItems: 'center',
-            gap: collapsed ? 0 : 10,
+            gap: collapsed ? 0 : 12,
             justifyContent: collapsed ? 'center' : 'flex-start',
-            width: collapsed ? 44 : '100%',
-            alignSelf: collapsed ? 'center' : 'stretch',
+            width: '100%',
             background: 'transparent',
-            border: `1px solid ${iconBorderColor}`,
+            border: 'none',
+            borderLeft: '3px solid transparent',
             color: inactiveColor,
-            borderRadius: 8,
-            padding: collapsed ? 0 : '0 14px',
-            height: 40,
+            borderRadius: 0,
+            padding: collapsed ? 0 : '0 18px',
+            height: 44,
             cursor: 'pointer',
-            fontSize: 13, fontWeight: 500,
+            fontSize: 16, fontWeight: 300, fontFamily: 'Satoshi, sans-serif',
             boxSizing: 'border-box',
             flexShrink: 0,
           }}
-          onMouseEnter={e => { e.currentTarget.style.color = '#C62828'; e.currentTarget.style.borderColor = '#C62828'; }}
-          onMouseLeave={e => { e.currentTarget.style.color = inactiveColor; e.currentTarget.style.borderColor = iconBorderColor; }}
+          onMouseEnter={e => { e.currentTarget.style.color = '#C62828'; e.currentTarget.style.borderLeftColor = '#C62828'; e.currentTarget.style.background = dark ? 'rgba(198,40,40,0.08)' : 'rgba(198,40,40,0.06)'; }}
+          onMouseLeave={e => { e.currentTarget.style.color = inactiveColor; e.currentTarget.style.borderLeftColor = 'transparent'; e.currentTarget.style.background = 'transparent'; }}
         >
-          <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+          <span aria-hidden="true" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
             <LogOut size={15} strokeWidth={1.8} />
           </span>
-          {!collapsed && <span style={{ whiteSpace: 'nowrap' }}>Logout</span>}
+          {!collapsed && <span style={{ whiteSpace: 'nowrap', letterSpacing: '0.3px' }}>Logout</span>}
         </button>
       </div>
 
