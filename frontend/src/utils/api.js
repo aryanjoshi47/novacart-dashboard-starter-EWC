@@ -50,15 +50,31 @@ export async function authorize()       { return apiFetch('/authorize'); }
 export async function getHealth()       { return apiFetch('/health'); }
 
 /**
+ * Fetches the Snowflake logout URL directly from the router's /logout-url endpoint.
+ * This endpoint is served by nginx (not proxied to the backend), so the
+ * Sf-Context-Logout-Url header injected by the SPCS ingress is available here.
+ * Returns null in Dev mode (REACT_APP_BACKEND_URL unset) or if the header is absent.
+ */
+export async function fetchLogoutUrl() {
+  const isDev = !process.env.REACT_APP_BACKEND_URL;
+  if (isDev) return null;
+  return '/sfc-endpoint/logout';
+}
+
+/**
  * Initiates logout.
- * In SPCS the backend redirects to the Snowflake logout URL so we navigate
- * directly to the endpoint and let the browser follow the redirect.
+ * Fetches /sfc-endpoint/logout to clear the SPCS session cookie, then
+ * navigates to / so SPCS forces re-authentication.
  * In Dev mode there is no real session — the caller just clears local state.
  */
-export async function logout() {
-  const isDev = !process.env.REACT_APP_BACKEND_URL; // REACT_APP_BACKEND_URL is unset locally
-  if (isDev) return; // nothing to do; UserContext already cleared state
-  window.location.href = `${BACKEND_URL}/logout`;
+export async function logout(logoutUrl) {
+  if (!logoutUrl) return; // Dev mode — nothing to do
+  try {
+    await fetch(logoutUrl, { credentials: 'include' });
+  } catch {
+    // ignore — cookie may still be cleared
+  }
+  window.location.href = '/';
 }
 
 export async function getSummary(s, e)  { return apiFetch(`/franchise/summary?start=${s}&end=${e}`); }

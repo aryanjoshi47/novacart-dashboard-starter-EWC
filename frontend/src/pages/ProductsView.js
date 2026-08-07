@@ -6,6 +6,7 @@ import { exportToExcel } from '../utils/exportExcel';
 import TopControls from '../components/TopControls';
 import { getProducts, readStoredDate } from '../utils/api';
 import Disclaimer from '../components/Disclaimer';
+import { useTheme } from '../utils/ThemeContext';
 
 const DEFAULT_START      = '2022-01-01';
 const DEFAULT_END        = '2022-12-31';
@@ -20,6 +21,11 @@ function formatCurrency(value) {
 }
 
 export default function ProductsView() {
+  const { dark } = useTheme();
+  const tooltipStyle = dark
+    ? { backgroundColor: '#1A1A24', border: '1px solid #2E3D52', color: '#EDE9FE' }
+    : { backgroundColor: '#ffffff', border: '1px solid #E0E6ED', color: '#1A2332' };
+
   const [startDate,  setStartDate]  = useState(() => readStoredDate('dashboardDates_start', DEFAULT_START));
   const [endDate,    setEndDate]    = useState(() => readStoredDate('dashboardDates_end',   DEFAULT_END));
   const [products,   setProducts]   = useState([]);
@@ -133,7 +139,7 @@ export default function ProductsView() {
         {error && (
           <div className="error-box">
             {error}
-            <button onClick={() => setError(null)} style={{ marginLeft: 12, background: 'none', border: 'none', cursor: 'pointer', fontWeight: 700, color: '#C62828' }}>✕</button>
+            <button onClick={() => setError(null)} style={{ marginLeft: 12, background: 'none', border: 'none', cursor: 'pointer', fontWeight: 300, color: '#C62828' }}>✕</button>
           </div>
         )}
 
@@ -242,7 +248,7 @@ export default function ProductsView() {
                     <XAxis type="number" tickFormatter={v => `$${(v/1000).toFixed(0)}K`} tick={{ fontSize: 11, fill: 'var(--text-muted)' }} />
                     <YAxis type="category" dataKey="product_name" width={130} interval={0} tick={{ fontSize: 11, fill: 'var(--text-muted)' }}
                       tickFormatter={v => v.length > 20 ? v.slice(0, 20) + '…' : v} />
-                    <Tooltip formatter={v => [formatCurrency(v), 'Revenue']} />
+                    <Tooltip formatter={v => [formatCurrency(v), 'Revenue']} contentStyle={tooltipStyle} />
                     <Bar dataKey="revenue" fill="var(--accent)" radius={[0, 4, 4, 0]} />
                   </BarChart>
                 </ResponsiveContainer>

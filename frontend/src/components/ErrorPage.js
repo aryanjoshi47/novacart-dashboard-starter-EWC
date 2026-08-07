@@ -31,7 +31,7 @@ export default function ErrorPage({ message, onRetry }) {
         boxShadow: 'var(--shadow)',
       }}>
         <div style={{ fontSize: 48, marginBottom: 16 }}>⚠️</div>
-        <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 12 }}>
+        <div style={{ fontSize: 20, fontWeight: 300, color: 'var(--text-primary)', marginBottom: 12 }}>
           Something went wrong
         </div>
         <div style={{ fontSize: 14, color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: 32 }}>
@@ -42,7 +42,7 @@ export default function ErrorPage({ message, onRetry }) {
             <button onClick={onRetry} style={{
               background: 'var(--accent)', color: '#fff', border: 'none',
               borderRadius: 8, padding: '10px 24px', fontSize: 14,
-              fontWeight: 700, cursor: 'pointer',
+              fontWeight: 300, cursor: 'pointer',
             }}>
               Try Again
             </button>
@@ -51,7 +51,7 @@ export default function ErrorPage({ message, onRetry }) {
             background: 'transparent', color: 'var(--text-secondary)',
             border: '1px solid var(--border)',
             borderRadius: 8, padding: '10px 24px', fontSize: 14,
-            fontWeight: 600, cursor: 'pointer',
+            fontWeight: 300, cursor: 'pointer',
           }}>
             Go to Orders
           </button>

@@ -1,18 +1,20 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { authorize, logout as apiLogout } from './api';
+import { authorize, fetchLogoutUrl, logout as apiLogout } from './api';
 
 const UserContext = createContext();
 
 export function UserProvider({ children }) {
-  const [user,    setUser]    = useState(null);
-  const [role,    setRole]    = useState(null);  // null = still loading
-  const [loading, setLoading] = useState(true);
+  const [user,       setUser]      = useState(null);
+  const [role,       setRole]      = useState(null);  // null = still loading
+  const [loading,    setLoading]   = useState(true);
+  const [logoutUrl,  setLogoutUrl] = useState(null);
 
   useEffect(() => {
-    authorize()
-      .then(data => {
+    Promise.all([authorize(), fetchLogoutUrl()])
+      .then(([data, logoutUrl]) => {
         setUser(data.user);
         setRole(data.role === 'admin' ? 'admin' : 'viewer');
+        setLogoutUrl(logoutUrl || data.logout_url || null);
       })
       .catch(() => {
         // If authorize fails, default to viewer — least privilege
@@ -24,7 +26,7 @@ export function UserProvider({ children }) {
   function logout() {
     setUser(null);
     setRole(null);
-    apiLogout();
+    apiLogout(logoutUrl);
   }
 
   return (

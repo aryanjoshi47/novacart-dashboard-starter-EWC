@@ -33,7 +33,7 @@ export default function ServiceStatus() {
         boxShadow: 'none',
         display: 'inline-block',
       }} />
-      <span style={{ color: colors[status], fontWeight: 500 }}>{labels[status]}</span>
+      <span style={{ color: colors[status], fontWeight: 300 }}>{labels[status]}</span>
     </div>
   );
 }

@@ -6,6 +6,7 @@ import { exportToExcel } from '../utils/exportExcel';
 import TopControls from '../components/TopControls';
 import { getSummary, getOrders, getCities, readStoredDate } from '../utils/api';
 import Disclaimer from '../components/Disclaimer';
+import { useTheme } from '../utils/ThemeContext';
 
 const DEFAULT_START = '2022-01-01';
 const DEFAULT_END   = '2022-12-31';
@@ -18,6 +19,11 @@ function formatCurrency(value) {
 }
 
 export default function OrdersView() {
+  const { dark } = useTheme();
+  const tooltipStyle = dark
+    ? { backgroundColor: '#1A1A24', border: '1px solid #2E3D52', color: '#EDE9FE' }
+    : { backgroundColor: '#ffffff', border: '1px solid #E0E6ED', color: '#1A2332' };
+
   const [startDate, setStartDate] = useState(() => readStoredDate('dashboardDates_start', DEFAULT_START));
   const [endDate,   setEndDate]   = useState(() => readStoredDate('dashboardDates_end',   DEFAULT_END));
 
@@ -158,7 +164,7 @@ export default function OrdersView() {
         {mainError && (
           <div className="error-box">
             {mainError}
-            <button onClick={() => setMainError(null)} style={{ marginLeft: 12, background: 'none', border: 'none', cursor: 'pointer', fontWeight: 700, color: '#C62828' }}>✕</button>
+            <button onClick={() => setMainError(null)} style={{ marginLeft: 12, background: 'none', border: 'none', cursor: 'pointer', fontWeight: 300, color: '#C62828' }}>✕</button>
           </div>
         )}
 
@@ -259,7 +265,7 @@ export default function OrdersView() {
                       tick={{ fontSize: 11, fill: 'var(--text-muted)' }}
                     />
                     <YAxis tickFormatter={v => `$${(v/1000).toFixed(0)}K`} tick={{ fontSize: 11, fill: 'var(--text-muted)' }} />
-                    <Tooltip formatter={v => [`$${v.toLocaleString()}`, 'Revenue']} labelFormatter={v => v} />
+                    <Tooltip formatter={v => [`$${v.toLocaleString()}`, 'Revenue']} labelFormatter={v => v} contentStyle={tooltipStyle} />
                     <Line type="linear" dataKey="revenue" stroke="var(--accent)" strokeWidth={2} dot={{ r: 4, fill: 'var(--accent)' }} activeDot={{ r: 6 }} />
                   </LineChart>
                 </ResponsiveContainer>
@@ -323,7 +329,7 @@ export default function OrdersView() {
           {citiesError ? (
             <div className="error-box" style={{ marginBottom: 0 }}>
               {citiesError}
-              <button onClick={() => setCitiesError(null)} style={{ marginLeft: 12, background: 'none', border: 'none', cursor: 'pointer', fontWeight: 700, color: '#C62828' }}>✕</button>
+              <button onClick={() => setCitiesError(null)} style={{ marginLeft: 12, background: 'none', border: 'none', cursor: 'pointer', fontWeight: 300, color: '#C62828' }}>✕</button>
             </div>
           ) : cities.length === 0 ? (
             <div className="loading">No data available</div>
@@ -356,7 +362,7 @@ export default function OrdersView() {
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
                 <XAxis type="number" tickFormatter={v => `$${(v/1000).toFixed(0)}K`} tick={{ fontSize: 12, fill: 'var(--text-muted)' }} />
                 <YAxis type="category" dataKey="city" width={130} interval={0} tick={{ fontSize: 11, fill: 'var(--text-muted)' }} />
-                <Tooltip formatter={v => [`$${v.toLocaleString()}`, 'Revenue']} />
+                <Tooltip formatter={v => [`$${v.toLocaleString()}`, 'Revenue']} contentStyle={tooltipStyle} />
                 <Bar dataKey="revenue" fill="var(--blue)" radius={[0, 4, 4, 0]} />
               </BarChart>
             </ResponsiveContainer>
